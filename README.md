@@ -123,7 +123,7 @@ web/             React + GSAP dashboard
 data/            demo data generator output, Postgres compose, Zetaris SQL
 conformance/     official Meterless runners (Apache-2.0) + saved scorecards
 evals/scout/     official Scout Intent eval harness (Apache-2.0)
-docs/WRITEUP.md  the project story
+docs/WRITEUP.md  the project story      docs/AdSpendAutopilot-pitch.pptx  pitch deck
 ```
 
 Demo data is synthetic and generated deterministically (`scripts/generate-data.ts`), so the right answers are known. Ad platforms are sandboxed: budget writes go to a local state file that stands in for the Meta and Google Ads APIs.
