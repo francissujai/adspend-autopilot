@@ -65,8 +65,10 @@ export default function App() {
   }, []);
 
   const onMoveDone = useCallback(() => {
-    setBudgets((b) => ({ ...b, ...pendingBudgets.current }));
+    // Capture before clearing: the state updater runs later, during render.
+    const after = pendingBudgets.current;
     pendingBudgets.current = {};
+    setBudgets((b) => ({ ...b, ...after }));
   }, []);
 
   // Replay mode: play a saved cycle with its real timing, sped up.
