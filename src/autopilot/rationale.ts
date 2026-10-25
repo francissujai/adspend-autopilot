@@ -65,8 +65,10 @@ export async function writeRationales(items: RationaleInput[], llm: ChatProvider
       to: d.candidate.to?.name,
       metrics: d.candidate.metrics,
       expected_backend_revenue_delta_per_day: d.candidate.expectedDailyRevenueDelta,
-      confidence: d.confidence.value,
-      confidence_factors: d.confidence.factors,
+      // Named separately so the model cannot mix them up.
+      overall_confidence_0_to_1: d.confidence.value,
+      platform_vs_backend_roas_agreement_0_to_1: d.confidence.factors.find((f) => f.name === "platform vs backend agreement")?.value,
+      confidence_factors: d.confidence.factors.map((f) => `${f.name}: ${f.value} (${f.note})`),
       risk: d.riskLevel,
       evidence_ids: d.candidate.evidence,
     };
