@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "note": "Ad Spend Autopilot intent registry. Each budget move the optimizer proposes is phrased as a request and classified by Scout against these intents; riskClass is the floor, the autopilot policy pack adds amount limits and approvals.",
+  "intents": [
+    {
+      "id": "GENERAL",
+      "category": "general",
+      "description": "Safe fallback when no registered intent clears the Reject band. Never routes to tools.",
+      "capabilities": [],
+      "riskClass": "low",
+      "surfaces": ["*"],
+      "roles": ["*"],
+      "examples": [],
+      "version": 1
+    },
+    {
+      "id": "budget.shift",
+      "category": "budget",
+      "description": "Move daily budget from one ad line to another, keeping total spend flat.",
+      "parameters": { "type": "object", "properties": { "amount_usd": { "type": "number", "minimum": 1 }, "share_of_source": { "type": "number" } } },
+      "capabilities": ["zetaris.read", "ledger.sign", "platform.budget.write"],
+      "riskClass": "medium",
+      "surfaces": ["api", "chat"],
+      "roles": ["autopilot-agent", "performance-marketer"],
+      "examples": [
+        "Shift $500 per day from Display - Broad Awareness to Retargeting - Cart Abandoners",
+        "Move $300 of daily budget from Search - Generic to PMax - Catalog",
+        "Reallocate $1,200 a day from the worst ad set to the best one",
+        "Shift budget from a low ROAS campaign to a budget-limited ad set"
+      ],
+      "version": 1
+    },
+    {
+      "id": "budget.increase",
+      "category": "budget",
+      "description": "Raise an ad line's daily budget, increasing total spend.",
+      "parameters": { "type": "object", "properties": { "amount_usd": { "type": "number", "minimum": 1 } } },
+      "capabilities": ["zetaris.read", "ledger.sign", "platform.budget.write"],
+      "riskClass": "high",
+      "surfaces": ["api", "chat"],
+      "roles": ["autopilot-agent", "performance-marketer"],
+      "examples": [
+        "Increase the daily budget of Prospecting - Lookalike 3% by $5,000",
+        "Raise the budget on the retargeting ad set by $200 a day",
+        "Add $1,000 per day to Search - Brand"
+      ],
+      "version": 1
+    },
+    {
+      "id": "budget.decrease",
+      "category": "budget",
+      "description": "Lower an ad line's daily budget, reducing total spend.",
+      "parameters": { "type": "object", "properties": { "amount_usd": { "type": "number", "minimum": 1 } } },
+      "capabilities": ["zetaris.read", "ledger.sign", "platform.budget.write"],
+      "riskClass": "low",
+      "surfaces": ["api", "chat"],
+      "roles": ["autopilot-agent", "performance-marketer"],
+      "examples": [
+        "Cut $400 a day from Display - Broad Awareness",
+        "Reduce the daily budget of the UGC creative test by $100",
+        "Lower spend on the weakest campaign"
+      ],
+      "version": 1
+    },
+    {
+      "id": "campaign.pause",
+      "category": "campaign",
+      "description": "Pause an ad set or campaign entirely.",
+      "capabilities": ["zetaris.read", "ledger.sign", "platform.status.write"],
+      "riskClass": "medium",
+      "surfaces": ["api", "chat"],
+      "roles": ["autopilot-agent", "performance-marketer"],
+      "examples": ["Pause Display - Broad Awareness", "Turn off the UGC video test ad set", "Stop the lookalike campaign"],
+      "version": 1
+    },
+    {
+      "id": "report.performance",
+      "category": "report",
+      "description": "Summarize ad performance and ROAS by line without changing anything.",
+      "capabilities": ["zetaris.read"],
+      "riskClass": "low",
+      "surfaces": ["api", "chat"],
+      "roles": ["*"],
+      "examples": ["Show me ROAS by ad set for last week", "Which campaigns are budget limited?", "Compare platform-reported and backend revenue by campaign"],
+      "version": 1
+    }
+  ]
+}
