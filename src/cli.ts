@@ -7,12 +7,13 @@
 //   npm run replay  -- D-0001           re-derive a decision from its stored evidence
 //   npm run verify                      verify the ledger's hash chain and signatures
 //   npm run tamper-demo                 show that editing one ledger entry is detected
+//   npm run demo:reset                  archive the ledger, trust memory and sandbox budgets; keep recordings
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createPublicKey } from "node:crypto";
-import { Autopilot, DATA_DIR } from "./autopilot/autopilot.ts";
+import { Autopilot, DATA_DIR, archiveRunState } from "./autopilot/autopilot.ts";
 import { verifyLedger, type LedgerEntry } from "./autopilot/ledger.ts";
 
 const [, , command, ...rest] = process.argv;
@@ -36,7 +37,7 @@ const commands: Record<string, () => Promise<number>> = {
           case "evidence":
             return console.log(`  ${e.id} ${e.purpose} (${e.rows} rows, ${e.ms} ms)${e.error ? ` ERROR ${e.error}` : ""}`);
           case "governance":
-            return console.log(`  governance probe: ${e.allowed ? "ALLOWED (over-privileged!)" : "denied"} - ${e.detail}\n`);
+            return console.log(`  governance probe: ${e.allowed ? "ALLOWED (over-privileged!)" : e.unreachable ? "NOT CHECKED (Zetaris unreachable)" : "denied"} - ${e.detail}\n`);
           case "scout":
             return console.log(`  ${e.id} Scout: ${e.intent} (${e.band}) risk ${e.risk}, ${e.flags} flags, contract ${e.contract ? "signed" : "none"}, ${e.ms} ms`);
           case "rationale":
@@ -78,6 +79,12 @@ const commands: Record<string, () => Promise<number>> = {
     const v = new Autopilot().verify();
     console.log(v.ok ? `ledger valid: ${v.entries} entries, hash chain and Ed25519 signatures check out` : `ledger BROKEN at #${v.firstBad?.seq}: ${v.firstBad?.reason}`);
     return v.ok ? 0 : 1;
+  },
+  async "demo-reset"() {
+    const r = archiveRunState();
+    console.log(r.moved.length ? `archived ${r.moved.join(", ")} to ${r.archivedTo}
+The next cycle starts from an empty ledger. Saved recordings are kept.` : "nothing to archive: the ledger is already empty");
+    return 0;
   },
   async "tamper-demo"() {
     const file = path.join(DATA_DIR, "ledger", "ledger.jsonl");

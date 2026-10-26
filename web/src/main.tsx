@@ -1,19 +1,18 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import "@fontsource/schibsted-grotesk/400.css";
-import "@fontsource/schibsted-grotesk/600.css";
-import "@fontsource/schibsted-grotesk/800.css";
-import "@fontsource/martian-mono/400.css";
-import "@fontsource/martian-mono/600.css";
+import "./foundation.css";
 import "./styles.css";
+import "./motion";
 import App from "./App";
-
-gsap.registerPlugin(useGSAP);
+import { StoreProvider } from "./store";
+import { ToastProvider } from "./ui/toasts";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    </ToastProvider>
   </StrictMode>,
 );

@@ -52,7 +52,8 @@ export interface Snapshot {
   lines: LineMetrics[];
   notes: Note[];
   evidence: Evidence[];
-  governance: { probe: string; allowed: boolean; detail: string };
+  /** unreachable: the probe failed for a network reason, so access could not be checked. */
+  governance: { probe: string; allowed: boolean; unreachable?: boolean; detail: string };
 }
 
 export function windows(asOf = env("AUTOPILOT_AS_OF", "2026-10-19")) {
@@ -68,6 +69,7 @@ export function agentClient(): SqlRunner & { identity: string } {
   return c;
 }
 
+const UNREACHABLE = /fetch failed|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|aborted|timed? ?out|Zetaris HTTP 5\d\d/i;
 const sha = (rows: unknown[][]) => createHash("sha256").update(canonicalJson(rows)).digest("hex");
 const num = (v: unknown) => (v === null || v === undefined || v === "" ? 0 : Number(v));
 
@@ -129,7 +131,11 @@ GROUP BY utm_id`,
     const r = await sql.run(probeSql, 1);
     governance = { probe: probeSql, allowed: true, detail: `readable (${r.rows[0]?.[0]} rows): the agent identity is over-privileged` };
   } catch (err) {
-    governance = { probe: probeSql, allowed: false, detail: `denied by Zetaris: ${(err as Error).message.slice(0, 200)}` };
+    const msg = (err as Error).message;
+    // A network failure is not a denial: only Zetaris itself can refuse the read.
+    governance = UNREACHABLE.test(msg)
+      ? { probe: probeSql, allowed: false, unreachable: true, detail: `could not reach Zetaris to check: ${msg.slice(0, 200)}` }
+      : { probe: probeSql, allowed: false, detail: `denied by Zetaris: ${msg.slice(0, 200)}` };
   }
 
 

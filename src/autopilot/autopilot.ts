@@ -19,6 +19,25 @@ import { writeRationales, type Rationale } from "./rationale.ts";
 import { TrustMemory } from "./trust.ts";
 
 export const DATA_DIR = path.join(ROOT, ".autopilot");
+export const ARCHIVE_DIR = path.join(ROOT, ".autopilot-archive");
+
+/**
+ * Start the demo from a clean ledger: move the ledger, trust memory and sandbox
+ * budgets to .autopilot-archive/<timestamp>/. Keys and saved cycle recordings stay,
+ * so replays keep working. Nothing is deleted.
+ */
+export function archiveRunState(dir = DATA_DIR, archiveRoot = ARCHIVE_DIR): { archivedTo: string; moved: string[] } {
+  const to = path.join(archiveRoot, new Date().toISOString().replace(/[:.]/g, "-"));
+  const moved: string[] = [];
+  for (const name of ["ledger", "memory", "platform-state.json"]) {
+    const from = path.join(dir, name);
+    if (!fs.existsSync(from)) continue;
+    fs.mkdirSync(to, { recursive: true });
+    fs.renameSync(from, path.join(to, name));
+    moved.push(name);
+  }
+  return { archivedTo: to, moved };
+}
 const REGISTRY = path.join(ROOT, "src", "autopilot", "registry.json");
 const AGENT = { id: "autopilot", role: "autopilot-agent" };
 
@@ -50,7 +69,7 @@ export interface CycleRecord {
 export type AutopilotEvent =
   | { type: "cycle.start"; cycleId: string; asOf: string; identity: string; model: string }
   | { type: "evidence"; id: string; purpose: string; rows: number; ms: number; error?: string }
-  | { type: "governance"; allowed: boolean; detail: string }
+  | { type: "governance"; allowed: boolean; unreachable?: boolean; detail: string }
   | { type: "lines"; lines: Snapshot["lines"] }
   | { type: "candidate"; id: string; source: string; request: string }
   | { type: "scout"; id: string; intent: string; band: string; risk: string; flags: number; contract: boolean; ms: number }
@@ -107,7 +126,11 @@ export class Autopilot {
 
     const snapshot = await loadSnapshot(sql);
     for (const e of snapshot.evidence) emit({ type: "evidence", id: e.id, purpose: e.purpose, rows: e.rows.length, ms: e.ms, error: e.error });
-    emit({ type: "governance", allowed: snapshot.governance.allowed, detail: snapshot.governance.detail });
+    // With no evidence at all there is nothing to decide on; stop before anything is written to the ledger.
+    if (snapshot.evidence.every((e) => e.error)) {
+      throw new Error(`Zetaris did not answer any query (${snapshot.evidence[0]?.error}). Nothing was decided or signed; the last cycle is unchanged.`);
+    }
+    emit({ type: "governance", allowed: snapshot.governance.allowed, unreachable: snapshot.governance.unreachable, detail: snapshot.governance.detail });
     emit({ type: "lines", lines: snapshot.lines });
 
     const records: DecisionRecord[] = [];

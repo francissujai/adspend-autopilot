@@ -74,10 +74,25 @@ const MIME: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js
 
 function serveStatic(res: http.ServerResponse, urlPath: string) {
   const file = path.normalize(path.join(WEB, urlPath === "/" ? "index.html" : urlPath));
-  const safe = file.startsWith(WEB) && fs.existsSync(file) && fs.statSync(file).isFile() ? file : path.join(WEB, "index.html");
+  // A missing file with an extension (robots.txt, a stale asset) is a 404; extension-less paths are app sections.
+  const inside = file.startsWith(WEB + path.sep);
+  const exists = inside && fs.existsSync(file) && fs.statSync(file).isFile();
+  if (!exists && path.extname(urlPath)) return json(res, 404, { error: "not found" });
+  const safe = inside && fs.existsSync(file) && fs.statSync(file).isFile() ? file : path.join(WEB, "index.html");
   if (!fs.existsSync(safe)) return json(res, 404, { error: "web UI not built: run npm run web:build" });
   res.writeHead(200, { "Content-Type": MIME[path.extname(safe)] ?? "application/octet-stream" });
   fs.createReadStream(safe).pipe(res);
+}
+
+/** Recordings of cycles that finished, newest first. A cycle that stopped on an error is not offered for replay. */
+function savedCycles(): string[] {
+  if (!fs.existsSync(EVENTS_DIR)) return [];
+  return fs
+    .readdirSync(EVENTS_DIR)
+    .filter((f) => f.endsWith(".events.jsonl") && fs.readFileSync(path.join(EVENTS_DIR, f), "utf-8").includes('"type":"cycle.done"'))
+    .map((f) => f.replace(".events.jsonl", ""))
+    .sort()
+    .reverse();
 }
 
 function ledgerView(ap: Autopilot) {
@@ -111,7 +126,7 @@ const server = http.createServer(async (req, res) => {
         cycles: s.cycles.map(({ evidence, ...c }) => ({ ...c, evidence: evidence.map(({ rows, ...e }) => ({ ...e, rowCount: rows.length })) })),
         platforms: s.platforms,
         ledger: ledgerView(ap),
-        savedCycles: fs.existsSync(EVENTS_DIR) ? fs.readdirSync(EVENTS_DIR).filter((f) => f.endsWith(".events.jsonl")).map((f) => f.replace(".events.jsonl", "")).sort().reverse() : [],
+        savedCycles: savedCycles(),
       });
     }
     if (req.method === "POST" && p === "/api/cycle") {

@@ -1,228 +1,136 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, follow, money, replayCycle } from "./api";
-import { DecisionSlip } from "./components/DecisionSlip";
-import { FlowBoard, type Move } from "./components/FlowBoard";
-import { LedgerChain } from "./components/LedgerChain";
-import { Trace } from "./components/Trace";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { WhyDrawer } from "./components/WhyDrawer";
-import type { AppState, AutopilotEvent, Decision, Line } from "./types";
+import { REPLAY } from "./replay";
+import { ThemeButton } from "./theme";
+import { Landing } from "./landing/Landing";
+import { content as landingContent } from "./landing/content";
+import { useStore } from "./store-context";
+import type { AutopilotEvent } from "./types";
+import { Palette, type Command } from "./ui/Palette";
+import { Decisions } from "./views/Decisions";
+import { LedgerView } from "./views/LedgerView";
+import { Replays } from "./views/Replays";
+import { Today } from "./views/Today";
 
-const params = new URLSearchParams(location.search);
-const REPLAY = params.get("replay");
-const SPEED = Number(params.get("speed")) || 8;
+export type Section = "today" | "decisions" | "ledger" | "replays";
+const PATHS: Record<Section, string> = { today: "/app", decisions: "/decisions", ledger: "/ledger", replays: "/replays" };
+const TABS: { id: Section; label: string }[] = [
+  { id: "today", label: "Today" }, { id: "decisions", label: "Decisions" }, { id: "ledger", label: "Ledger" }, { id: "replays", label: "Replays" },
+];
+/** "/" is the landing page, unless it carries a recorded cycle or a decision to open (links made before /app existed). */
+const onLanding = () => location.pathname.replace(/\/+$/, "") === "" && !REPLAY && !new URLSearchParams(location.search).has("open");
+const sectionFromPath = (p: string): Section => (Object.entries(PATHS).find(([, v]) => v === (p.replace(/\/+$/, "") || "/"))?.[0] as Section) ?? "today";
+
+function BrandMark() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" style={{ fill: "var(--accent)" }} />
+      <circle cx="16" cy="16" r="9" fill="none" strokeWidth="2.4" strokeDasharray="3 2" style={{ stroke: "var(--on-accent)" }} />
+      <path d="M11.5 16.5l3 3 6-7" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--on-accent)" }} />
+    </svg>
+  );
+}
 
 export default function App() {
-  const [state, setState] = useState<AppState | null>(null);
-  const [events, setEvents] = useState<AutopilotEvent[]>([]);
-  const [live, setLive] = useState<Decision[]>([]);
-  const [lines, setLines] = useState<Line[]>([]);
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
-  const [move, setMove] = useState<Move>();
-  const [fresh, setFresh] = useState<Set<string>>(new Set());
-  const [open, setOpen] = useState<string | null>(params.get("open"));
-  const [running, setRunning] = useState(false);
-  const [useModel, setUseModel] = useState(true);
-  const [error, setError] = useState("");
-  const pendingBudgets = useRef<Record<string, number>>({});
+  const s = useStore();
+  const [section, setSection] = useState<Section>(() => sectionFromPath(location.pathname));
+  const [palette, setPalette] = useState(false);
+  const [landing, setLanding] = useState(onLanding);
 
-  const refresh = useCallback(async () => {
-    const s = await api.state();
-    setState(s);
-    return s;
-  }, []);
+  const go = useCallback((next: Section) => {
+    if (next !== section || landing) history.pushState(null, "", PATHS[next] + location.search);
+    setLanding(false);
+    setSection(next);
+    window.scrollTo({ top: 0 });
+  }, [section, landing]);
 
-  // Initial load: latest cycle's lines, current sandbox budgets.
   useEffect(() => {
-    refresh()
-      .then((s) => {
-        if (REPLAY) return;
-        const cycle = s.cycles[0];
-        if (cycle) setLines(cycle.lines);
-        const b: Record<string, number> = {};
-        for (const l of cycle?.lines ?? []) b[l.id] = s.platforms?.budgets[l.id]?.dailyBudget ?? l.dailyBudget;
-        setBudgets(b);
-      })
-      .catch((e) => setError(`Cannot reach the autopilot API: ${(e as Error).message}. Start it with npm run serve.`));
-  }, [refresh]);
-
-  const onEvent = useCallback((e: AutopilotEvent) => {
-    setEvents((xs) => [...xs, e]);
-    if (e.type === "lines") {
-      setLines(e.lines);
-      setBudgets(Object.fromEntries(e.lines.map((l) => [l.id, l.dailyBudget])));
-    }
-    if (e.type === "decision") {
-      setLive((xs) => [...xs.filter((x) => x.id !== e.record.id), e.record]);
-      setFresh((s) => new Set(s).add(e.record.id));
-    }
-    if (e.type === "rationale") setLive((xs) => xs.map((x) => (x.id === e.id ? { ...x, rationale: { text: e.text, by: e.by as "nemotron" | "template", model: e.model } } : x)));
-    if (e.type === "execution" && e.receipt.ok) {
-      const from = e.receipt.changes.find((c) => c.after < c.before);
-      const to = e.receipt.changes.find((c) => c.after > c.before);
-      for (const c of e.receipt.changes) pendingBudgets.current[c.lineId] = c.after;
-      setMove({ key: `${e.id}-${e.receipt.at}`, fromId: from?.lineId, toId: to?.lineId, amount: to ? to.after - to.before : 0 });
-    }
+    const onPop = () => { setLanding(onLanding()); setSection(sectionFromPath(location.pathname)); };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette((p) => !p);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
+  useEffect(() => { document.title = landing ? "Ad Spend Autopilot: budget moves you can audit" : `${TABS.find((t) => t.id === section)?.label} · Ad Spend Autopilot`; }, [section, landing]);
 
-  const onMoveDone = useCallback(() => {
-    // Capture before clearing: the state updater runs later, during render.
-    const after = pendingBudgets.current;
-    pendingBudgets.current = {};
-    setBudgets((b) => ({ ...b, ...after }));
-  }, []);
+  const waiting = s.allDecisions.filter((d) => d.status === "awaiting-approval").length;
+  const gov = [...s.events].reverse().find((e) => e.type === "governance") as Extract<AutopilotEvent, { type: "governance" }> | undefined;
+  const governance = gov ? { allowed: gov.allowed, unreachable: gov.unreachable, detail: gov.detail } : s.state?.cycles[0]?.governance;
+  const ledger = s.state?.ledger;
 
-  // Replay mode: play a saved cycle with its real timing, sped up.
-  useEffect(() => {
-    if (!REPLAY) return;
-    let stop = () => {};
-    api
-      .savedEvents(REPLAY)
-      .then((items) => {
-        setRunning(true);
-        stop = replayCycle(items, SPEED, onEvent, () => setRunning(false));
-      })
-      .catch((e) => setError((e as Error).message));
-    return () => stop();
-  }, [onEvent]);
+  const openDecision = s.allDecisions.find((d) => d.id === s.open) ?? s.decisions.find((d) => d.id === s.open);
+  const ledgerSeq = ledger?.entries.find((e) => e.type === "decision" && e.ref === s.open)?.seq;
+  const recorded = s.state?.savedCycles[0];
 
-  const run = async () => {
-    setError("");
-    setEvents([]);
-    setLive([]);
-    setFresh(new Set());
-    setRunning(true);
-    try {
-      const { job } = await api.runCycle(useModel);
-      follow(job, onEvent, async () => {
-        setRunning(false);
-        await refresh();
-      });
-    } catch (e) {
-      setRunning(false);
-      setError((e as Error).message);
-    }
-  };
+  const commands = useMemo<Command[]>(() => [
+    ...TABS.map((t) => ({ id: `go-${t.id}`, label: t.label, hint: "Go to", run: () => go(t.id) })),
+    ...(REPLAY ? [] : [{ id: "run", label: "Run a cycle", hint: "Action", run: () => { go("today"); s.run(); } }]),
+    ...(recorded && !REPLAY ? [{ id: "watch", label: "Watch recorded cycle", hint: "Action", run: () => { location.href = `/app?replay=${encodeURIComponent(recorded)}&speed=8`; } }] : []),
+    ...s.allDecisions.map((d) => ({ id: d.id, label: `${d.id} ${d.candidate.request}`, hint: "Decision", run: () => s.setOpen(d.id) })),
+  ], [go, s, recorded]);
 
-  const review = async (id: string, outcome: "approved" | "rejected", note: string) => {
-    setError("");
-    try {
-      const by = localStorage.getItem("reviewer") || "Marketer";
-      await api.review(id, outcome, by, note);
-      const s = await refresh();
-      const d = s.decisions.find((x) => x.id === id);
-      setLive((xs) => xs.map((x) => (x.id === id && d ? d : x)));
-      setFresh((f) => new Set(f).add(id));
-      const exec = d?.executions?.at(-1);
-      if (exec?.ok) onEvent({ type: "execution", id, receipt: exec });
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
-
-  // Live decisions win while a cycle runs; otherwise show the latest cycle from the ledger.
-  const decisions = useMemo(() => {
-    if (live.length) return live;
-    if (!state || REPLAY) return [];
-    const latest = state.cycles[0]?.cycleId;
-    return state.decisions.filter((d) => d.cycleId === latest);
-  }, [live, state]);
-  // Read in decision order: what was executed, what waits, what was blocked.
-  const ordered = [...decisions].sort((a, b) => a.id.localeCompare(b.id));
-  const merged = ordered.map((d) => state?.decisions.find((x) => x.id === d.id && (x.review || x.status !== d.status)) ?? d);
-  const openDecision = merged.find((d) => d.id === open) ?? state?.decisions.find((d) => d.id === open);
-  const ledgerSeq = state?.ledger.entries.find((e) => e.type === "decision" && e.ref === open)?.seq;
-
-  const gov = [...events].reverse().find((e) => e.type === "governance") as Extract<AutopilotEvent, { type: "governance" }> | undefined;
-  const governance = gov ? { allowed: gov.allowed, detail: gov.detail } : state?.cycles[0]?.governance;
-  const done = [...events].reverse().find((e) => e.type === "cycle.done") as Extract<AutopilotEvent, { type: "cycle.done" }> | undefined;
-  const start = events.find((e) => e.type === "cycle.start") as Extract<AutopilotEvent, { type: "cycle.start" }> | undefined;
+  if (landing) {
+    const open = (to: string) => { history.pushState(null, "", to); setLanding(false); setSection(sectionFromPath(to)); window.scrollTo({ top: 0 }); };
+    // one block in the hero ring per signed ledger entry
+    return <Landing c={landingContent} open={open} data={ledger?.entries.length ? [ledger.entries.length] : undefined} />;
+  }
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <svg viewBox="0 0 32 32" aria-hidden="true">
-            <rect width="32" height="32" rx="7" fill="#15233F" />
-            <circle cx="16" cy="16" r="9" fill="none" stroke="#EAF2EE" strokeWidth="2.4" strokeDasharray="3 2" />
-            <path d="M11.5 16.5l3 3 6-7" fill="none" stroke="#7FD1A6" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Ad Spend Autopilot
-        </div>
-        {governance && (
-          <span className={`seal ${governance.allowed ? "warn" : "ok"}`} title={governance.detail}>
-            <span className="dot">{governance.allowed ? "!" : "✓"}</span>
-            {governance.allowed ? <>Agent can read customer data: <b>set its own Zetaris key</b></> : <><b>Agent can't read customer data</b>, enforced by Zetaris</>}
-          </span>
-        )}
-        {state && (
-          <span className={`seal ${state.ledger.verify.ok ? "ok" : "bad"}`}>
-            <span className="dot">{state.ledger.verify.ok ? "✓" : "✕"}</span>
-            <b>Ledger {state.ledger.verify.ok ? "verified" : "broken"}</b> ({state.ledger.verify.entries} entries)
-          </span>
-        )}
-      </header>
-
-      <section className="hero">
-        <div>
-          <h1>Budget moves you can audit.</h1>
-          <p className="lede">The autopilot reads Meta, Google and your own orders through Zetaris, moves money to what earns on real revenue, and signs every decision. Risky moves wait for you.</p>
-          <div className="run">
-            {REPLAY ? (
-              <span className="runmeta">
-                Replay of {REPLAY} at {SPEED}x speed{running ? "" : ", finished"}
-              </span>
-            ) : (
-              <>
-                <button className="btn" onClick={run} disabled={running}>
-                  {running ? "Running a cycle" : "Run a cycle"}
-                </button>
-                <label className="toggle">
-                  <input type="checkbox" checked={useModel} onChange={(e) => setUseModel(e.target.checked)} disabled={running} />
-                  Explain each decision with Nemotron
-                </label>
-              </>
-            )}
-            <span className="runmeta">
-              {start ? `${start.cycleId}, data as of ${start.asOf}, model ${start.model}` : state?.cycles[0] ? `Last cycle ${state.cycles[0].cycleId}, data as of ${state.cycles[0].asOf}` : "No cycles yet"}
+    <>
+      <div className="paper-bg" aria-hidden />
+      <div className="app">
+        <header className="bar">
+          <button className="brand" onClick={() => go("today")} aria-label="Ad Spend Autopilot, go to Today"><BrandMark />Ad Spend Autopilot</button>
+          <nav className="tabs" aria-label="Sections">
+            {TABS.map((t) => (
+              <button key={t.id} className="tab" aria-current={section === t.id ? "page" : undefined} onClick={() => go(t.id)}>
+                {t.label}{t.id === "decisions" && waiting > 0 && <span className="badge" aria-label={`${waiting} waiting for you`}>{waiting}</span>}
+              </button>
+            ))}
+          </nav>
+          <span className="spacer" />
+          <ThemeButton className="btn ghost sm" />
+          <button className="btn ghost sm" onClick={() => setPalette(true)}>Search <span className="kbd hide-sm">Ctrl K</span></button>
+        </header>
+        <div className="trust" role="group" aria-label="Trust status">
+          {governance && (governance.unreachable ? (
+            <span className="seal muted" title={governance.detail}><span className="dot">?</span><b className="hide-sm">Customer-data access not checked</b></span>
+          ) : (
+            <span className={`seal ${governance.allowed ? "warn" : "ok"}`} title={governance.detail}>
+              <span className="dot">{governance.allowed ? "!" : "✓"}</span>
+              {governance.allowed ? <span>Agent can read customer data: <b>set its own Zetaris key</b></span> : <span><b>Agent can't read customer data</b><span className="hide-sm">, enforced by Zetaris</span></span>}
             </span>
-            {done && (
-              <span className="runmeta">
-                Finished in {Math.round(done.seconds)} s: {done.summary["auto-executed"]} executed, {done.summary["awaiting-approval"]} waiting for you, {done.summary.blocked} blocked
-              </span>
-            )}
-          </div>
+          ))}
+          {ledger && (ledger.verify.entries === 0 ? (
+            <span className="seal muted"><span className="dot">·</span><b>Ledger empty</b></span>
+          ) : (
+            <span className={`seal ${ledger.verify.ok ? "ok" : "bad"}`}>
+              <span className="dot">{ledger.verify.ok ? "✓" : "✕"}</span><b>Ledger {ledger.verify.ok ? "verified" : "broken"}</b><span className="hide-sm">{ledger.verify.entries} entries</span>
+            </span>
+          ))}
         </div>
-        <FlowBoard lines={lines} budgets={budgets} move={move} onMoveDone={onMoveDone} />
-      </section>
+        <hr className="rule" />
 
-      {error && <div className="tamper" role="alert">{error}</div>}
-
-      <div className="cols">
-        <section>
-          <h2 className="section-title">Decisions</h2>
-          <p className="section-sub">
-            {merged.length
-              ? `${merged.length} decisions in this cycle. Total moved automatically: ${money(merged.filter((d) => d.status === "auto-executed").reduce((s, d) => s + d.candidate.amountUsd, 0))} a day.`
-              : "Each budget move becomes a signed slip: executed, held for you, or blocked."}
-          </p>
-          <div className="slips">
-            {merged.length ? (
-              merged.map((d) => <DecisionSlip key={d.id} d={d} fresh={fresh.has(d.id)} onWhy={() => setOpen(d.id)} onReview={(o, n) => review(d.id, o, n)} />)
-            ) : (
-              <div className="empty">No decisions yet. Run a cycle and the autopilot will propose moves from this week's data.</div>
-            )}
-          </div>
-        </section>
-        <aside>
-          <div className="panel">
-            <h2>What the autopilot is doing</h2>
-            <Trace events={events} />
-          </div>
-          {state && <LedgerChain ledger={state.ledger} />}
-        </aside>
+        <main id="main">
+          {section === "today" && <Today />}
+          {section === "decisions" && <Decisions />}
+          {section === "ledger" && <LedgerView />}
+          {section === "replays" && <Replays />}
+        </main>
       </div>
 
-      {openDecision && <WhyDrawer d={openDecision} ledgerSeq={ledgerSeq} onClose={() => setOpen(null)} />}
-    </div>
+      {openDecision && (
+        <WhyDrawer d={openDecision} ledgerSeq={ledgerSeq} onClose={() => s.setOpen(null)} onAll={() => { s.setOpen(null); go("decisions"); }} />
+      )}
+      {palette && <Palette commands={commands} onClose={() => setPalette(false)} />}
+    </>
   );
 }

@@ -5,10 +5,12 @@
   "description": "Ad Spend Autopilot: budget moves you can audit. Every move is a signed, replayable decision record; risky moves wait for a human. Zetaris + Meterless + NVIDIA Nemotron.",
   "type": "module",
   "scripts": {
+    "dev": "npm run data:up && npm run web:build && npm run serve",
     "data:generate": "tsx scripts/generate-data.ts",
     "data:up": "docker compose -f data/docker-compose.yml up -d",
     "data:down": "docker compose -f data/docker-compose.yml down",
     "test": "tsx --test test/*.test.ts",
+    "smoke": "tsx --test smoke/*.test.ts",
     "typecheck": "tsc --noEmit",
     "conformance": "tsx scripts/conformance.ts",
     "cycle": "tsx src/cli.ts cycle",
@@ -18,6 +20,7 @@
     "replay": "tsx src/cli.ts replay",
     "verify": "tsx src/cli.ts verify",
     "tamper-demo": "tsx src/cli.ts tamper-demo",
+    "demo:reset": "tsx src/cli.ts demo-reset",
     "serve": "tsx src/server.ts",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build"

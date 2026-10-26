@@ -1,28 +1,32 @@
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { api, short } from "../api";
+import { api, money, short } from "../api";
+import { DUR, gsap, reducedMotion, useGSAP } from "../motion";
 import type { Decision, ReplayResult } from "../types";
+import { Crumbs } from "../ui/bits";
 
 type EvidenceDetail = Awaited<ReturnType<typeof api.evidence>>;
 
 /** Everything behind one decision, and a button to prove it can be re-derived. */
-export function WhyDrawer({ d, ledgerSeq, onClose }: { d: Decision; ledgerSeq?: number; onClose: () => void }) {
+export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledgerSeq?: number; onClose: () => void; onAll: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
   const [ev, setEv] = useState<EvidenceDetail | null>(null);
   const [replay, setReplay] = useState<ReplayResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const [opener] = useState(() => document.activeElement as HTMLElement | null);
   useGSAP(() => {
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) gsap.from(panel.current, { xPercent: 100, duration: 0.42, ease: "power3.out" });
+    if (!reducedMotion()) gsap.from(panel.current, { xPercent: 100, duration: DUR.stamp + 0.1 });
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     panel.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [onClose, opener]);
 
   const loadEvidence = async (id: string) => {
     setError("");
@@ -49,11 +53,11 @@ export function WhyDrawer({ d, ledgerSeq, onClose }: { d: Decision; ledgerSeq?: 
   return (
     <>
       <div className="scrim" onClick={onClose} />
-      <aside className="drawer" ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Why ${d.id}`}>
-        <button className="btn ghost close" onClick={onClose}>
+      <aside className="drawer" ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Why the autopilot decided ${d.id}`}>
+        <button className="btn ghost sm close" onClick={onClose}>
           Close
         </button>
-        <span className="serial">{d.id}</span>
+        <Crumbs items={[{ label: "Decisions", onClick: onAll }, { label: d.id }]} />
         <h2>{c.request}</h2>
         <div className="why">{d.rationale.text || "No explanation recorded."}</div>
         <div className="byline">
@@ -73,7 +77,7 @@ export function WhyDrawer({ d, ledgerSeq, onClose }: { d: Decision; ledgerSeq?: 
             <div key={f.name} style={{ display: "contents" }}>
               <dt>{f.name}</dt>
               <dd>
-                <span className="mono">{f.value}</span> {f.note}
+                <span className="mono">{f.value.toFixed(2)}</span> {f.note.replace(/\$(\d+)/g, (_, n: string) => money(Number(n)))}
               </dd>
             </div>
           ))}

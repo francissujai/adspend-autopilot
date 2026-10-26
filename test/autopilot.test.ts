@@ -13,6 +13,7 @@ import { Ledger, verifyLedger } from "../src/autopilot/ledger.ts";
 import { SandboxPlatforms } from "../src/autopilot/executor.ts";
 import { templateRationale } from "../src/autopilot/rationale.ts";
 import { Scout } from "../src/engines/scout/index.ts";
+import { Autopilot, archiveRunState } from "../src/autopilot/autopilot.ts";
 
 const ev = (id: string, columns: string[], rows: unknown[][]): Evidence => ({ id, purpose: id, sql: "SELECT", columns, rows, rowsSha256: "x", ms: 1 });
 const metaCols = ["line_id", "name", "daily_budget", "spend_7", "platform_revenue_7", "spend_3", "platform_revenue_3", "budget_lost_share_7"];
@@ -97,4 +98,37 @@ test("template rationale cites evidence and never invents an amount", () => {
   const text = templateRationale({ id: "D-1", candidate: c, status: "auto-executed", reasons: [], confidence: confidence(c, snapshot), riskLevel: "medium" });
   assert.match(text, /\$500\/day/);
   assert.match(text, /\[E1/);
+});
+
+test("a cycle with Zetaris unreachable fails loudly and writes nothing to the ledger", async () => {
+  const saved = { url: process.env.ZETARIS_REST_URL, key: process.env.ZETARIS_API_KEY, agent: process.env.AUTOPILOT_ZETARIS_API_KEY };
+  process.env.ZETARIS_REST_URL = "http://127.0.0.1:9/api/v1.0"; // nothing listens on port 9
+  process.env.ZETARIS_API_KEY = process.env.AUTOPILOT_ZETARIS_API_KEY = "test-key";
+  try {
+    const ap = new Autopilot(fs.mkdtempSync(path.join(os.tmpdir(), "autopilot-down-")));
+    const events: string[] = [];
+    await assert.rejects(ap.runCycle({ useModel: false, onEvent: (e) => events.push(e.type) }), /did not answer any query/);
+    assert.ok(!events.includes("governance"), "no access verdict without an answer from Zetaris");
+    assert.equal(ap.ledger.all().length, 0);
+  } finally {
+    for (const [k, v] of [["ZETARIS_REST_URL", saved.url], ["ZETARIS_API_KEY", saved.key], ["AUTOPILOT_ZETARIS_API_KEY", saved.agent]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+});
+
+test("demo reset archives the ledger, memory and budgets but keeps keys and recordings", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "autopilot-reset-"));
+  for (const d of ["ledger", "memory", "keys", "cycles"]) fs.mkdirSync(path.join(dir, d));
+  fs.writeFileSync(path.join(dir, "ledger", "ledger.jsonl"), "{}\n");
+  fs.writeFileSync(path.join(dir, "platform-state.json"), "{}");
+  fs.writeFileSync(path.join(dir, "cycles", "C-1.events.jsonl"), "{}\n");
+  const archive = path.join(dir, "archive");
+  const r = archiveRunState(dir, archive);
+  assert.deepEqual(r.moved, ["ledger", "memory", "platform-state.json"]);
+  assert.ok(fs.existsSync(path.join(r.archivedTo, "ledger", "ledger.jsonl")), "nothing deleted");
+  assert.ok(fs.existsSync(path.join(dir, "keys")) && fs.existsSync(path.join(dir, "cycles", "C-1.events.jsonl")));
+  assert.ok(!fs.existsSync(path.join(dir, "ledger")));
+  assert.deepEqual(archiveRunState(dir, archive).moved, []);
 });

@@ -1,13 +1,12 @@
 import { useRef, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
 import { api, short } from "../api";
+import { gsap, reducedMotion, useGSAP } from "../motion";
 import type { AppState, TamperResult } from "../types";
 
 const LABEL: Record<string, string> = { cycle: "Cycle evidence", decision: "Decision", approval: "Human review", execution: "Budget change", memory: "Trust memory" };
 
-/** The signed, hash-chained ledger, newest first, with a tamper test on a copy. */
-export function LedgerChain({ ledger }: { ledger: AppState["ledger"] }) {
+/** The signed, hash-chained ledger, newest first, with a tamper test on a copy. compact shows the latest few entries. */
+export function LedgerChain({ ledger, compact = false }: { ledger: AppState["ledger"]; compact?: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const [tamper, setTamper] = useState<TamperResult | null>(null);
   const [error, setError] = useState("");
@@ -19,7 +18,7 @@ export function LedgerChain({ ledger }: { ledger: AppState["ledger"] }) {
       const r = await api.tamper();
       setTamper(r);
       requestAnimationFrame(() => {
-        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) gsap.fromTo(".broken", { x: -4 }, { x: 0, duration: 0.4, ease: "elastic.out(1,0.3)" });
+        if (!reducedMotion()) gsap.fromTo(".broken", { x: -4 }, { x: 0, duration: 0.4, ease: "elastic.out(1,0.3)" });
       });
     } catch (e) {
       setError((e as Error).message);
@@ -27,32 +26,43 @@ export function LedgerChain({ ledger }: { ledger: AppState["ledger"] }) {
   });
 
   const broken = tamper?.result.firstBad?.seq;
-  const entries = [...ledger.entries].reverse().slice(0, 12);
+  const all = [...ledger.entries].reverse();
+  const entries = compact ? all.slice(0, 6) : all;
   return (
     <div className="panel" ref={root}>
       <h2>Decision ledger</h2>
-      <div className={`verdict ${ledger.verify.ok ? "ok" : "bad"}`}>
-        {ledger.verify.ok ? `Verified: ${ledger.verify.entries} entries, each signed with Ed25519 and chained to the one before` : `Broken at #${ledger.verify.firstBad?.seq}: ${ledger.verify.firstBad?.reason}`}
+      <div className={`verdict ${ledger.verify.ok ? "ok" : "bad"}`} role="status">
+        {ledger.verify.ok
+          ? ledger.verify.entries ? `Verified: ${ledger.verify.entries} entries, each signed with Ed25519 and chained to the one before` : "Empty. The first cycle starts the chain."
+          : `Broken at #${ledger.verify.firstBad?.seq}: ${ledger.verify.firstBad?.reason}`}
       </div>
       {entries.length ? (
         <ol className="chain">
           {entries.map((e) => (
             <li key={e.seq} className={broken !== undefined && e.seq >= broken ? "broken" : ""}>
               <span className="seq">{e.seq}</span>
-              <span>
-                {LABEL[e.type] ?? e.type} {e.ref ? <span className="mono">{e.ref}</span> : null}
-                <br />
-                <span className="h mono" title={`hash ${e.hash}\nprev ${e.prevHash}\nkey ${e.keyId}`}>
-                  {short(e.hash, 14)} ← {short(e.prevHash, 8)}
-                </span>
-              </span>
+              <details>
+                <summary>
+                  {LABEL[e.type] ?? e.type} {e.ref ? <span className="mono">{e.ref}</span> : null}
+                  <br />
+                  <span className="h mono">{short(e.hash, 14)} ← {short(e.prevHash, 8)}</span>
+                </summary>
+                <dl>
+                  <dt>hash</dt><dd className="mono">{e.hash}</dd>
+                  <dt>previous</dt><dd className="mono">{e.prevHash}</dd>
+                  <dt>signed by</dt><dd className="mono">{e.keyId}</dd>
+                  <dt>signature</dt><dd className="mono">{e.signature}</dd>
+                  <dt>at</dt><dd>{new Date(e.at).toLocaleString()}</dd>
+                </dl>
+              </details>
             </li>
           ))}
         </ol>
       ) : (
         <p className="section-sub">No entries yet.</p>
       )}
-      <button className="btn ghost" onClick={runTamper} disabled={!entries.length}>
+      {compact && all.length > entries.length && <p className="runmeta">Showing the latest {entries.length} of {all.length}. The Ledger section has the full chain.</p>}
+      <button className="btn ghost sm" onClick={runTamper} disabled={!entries.length}>
         Edit a copy and verify it
       </button>
       {tamper && (

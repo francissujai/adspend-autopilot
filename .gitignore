@@ -10,6 +10,7 @@ web/node_modules/
 
 # local runtime state: ledger, keys, sandbox platforms, memory
 .autopilot/
+.autopilot-archive/
 *.log
 evals/scout/reports/latest.md
 
@@ -23,3 +24,15 @@ Thumbs.db
 .idea/
 .claude/
 .cursor/
+
+# local QA artifacts
+baseline-screenshots/
+after-screenshots/
+test-results/
+playwright-report/
+
+before-revamp-screenshots/
+revamp-screenshots/
+
+# Office lock files
+~$*
