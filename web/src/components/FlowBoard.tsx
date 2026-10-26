@@ -79,8 +79,8 @@ export function FlowBoard({ lines, budgets, move, onMoveDone }: { lines: Line[];
                 {l.platform === "meta" ? "Meta" : "Google"}, backend {l.backendRoas7}x{gap ? `, platform claims ${l.platformRoas3}x` : ""}
               </span>
             </div>
-            <div className="track" aria-label={`Daily budget ${money(b)}`}>
-              <div className={`bar${l.budgetLostShare7 >= 0.2 ? " limited" : ""}`} data-bar={l.id} style={{ width: pct(b) }} />
+            <div className="track" role="img" aria-label={`Daily budget ${money(b)}`}>
+              <div className={`bar-fill${l.budgetLostShare7 >= 0.2 ? " limited" : ""}`} data-bar={l.id} style={{ width: pct(b) }} />
             </div>
             <div className="amt">{money(b)}</div>
           </div>
@@ -88,7 +88,7 @@ export function FlowBoard({ lines, budgets, move, onMoveDone }: { lines: Line[];
       })}
       <div className="legend">
         <span><i style={{ background: "var(--paper-deep)", boxShadow: "inset 0 0 0 1px var(--rule)" }} />daily budget</span>
-        <span><i style={{ background: "repeating-linear-gradient(135deg,var(--paper-deep) 0 3px,#d2e3da 3px 6px)" }} />budget-limited: lost delivery to budget</span>
+        <span><i style={{ background: "repeating-linear-gradient(135deg,var(--paper-deep) 0 3px,var(--stripe) 3px 6px)" }} />budget-limited: lost delivery to budget</span>
       </div>
       <div className="coin" ref={coin} aria-hidden="true">{move ? `+${money(move.amount)}` : ""}</div>
     </div>

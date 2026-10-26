@@ -19,7 +19,7 @@ const SOURCE: Record<string, string> = {
 };
 
 /** A decision as a signed slip. The stamp lands when the decision first appears. */
-export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh: boolean; onWhy: () => void; onReview: (outcome: "approved" | "rejected", note: string) => Promise<void> }) {
+export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh: boolean; onWhy: () => void; onReview?: (outcome: "approved" | "rejected", note: string) => Promise<void> }) {
   const root = useRef<HTMLElement>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +40,7 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
   const review = async (outcome: "approved" | "rejected") => {
     setBusy(true);
     try {
-      await onReview(outcome, note);
+      await onReview?.(outcome, note);
     } finally {
       setBusy(false);
     }
@@ -87,7 +87,7 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
         <button className="btn ghost" onClick={onWhy}>
           Why I did this
         </button>
-        {d.status === "awaiting-approval" && (
+        {d.status === "awaiting-approval" && onReview && (
           <>
             <input className="note-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for your decision (saved to the ledger)" aria-label={`Review note for ${d.id}`} />
             <button className="btn exec" disabled={busy} onClick={() => review("approved")}>

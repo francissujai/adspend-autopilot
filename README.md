@@ -78,7 +78,18 @@ The LLM never decides whether money moves. That's what makes decisions **replaya
 
 ## Run it
 
-Prerequisites: Docker, a local Zetaris install, Meterless Nightshift with a Nemotron lane, and Node 20+. The WhyBot repo's `docs/SETUP.md` covers the machine setup.
+### Prerequisites
+
+| Tool | Version | Needed for |
+|---|---|---|
+| Node.js | 20+ (tested on 24.12) with npm 10+ | everything |
+| Docker Desktop | current | demo Postgres (`npm run data:up`) and Zetaris |
+| Zetaris | local Docker install from Zetaris Cloud | running a cycle |
+| Meterless Nightshift | with a Nemotron lane | model-written rationales (`--no-model` skips them) |
+
+The WhyBot repo's [`docs/SETUP.md`](https://github.com/francissujai/whybot/blob/main/docs/SETUP.md) covers the machine setup. Without Zetaris, the dashboard loads but stays empty, and `npm test`, `npm run typecheck` and `npm run conformance` still run.
+
+### Setup
 
 ```powershell
 npm install
@@ -93,9 +104,15 @@ python scripts/run_sql.py <repo>/data/zetaris/02_governance.sql
 #   and put that user's API key in AUTOPILOT_ZETARIS_API_KEY
 
 copy .env.example .env         # fill in keys
-npm run web:build
-npm run serve                  # http://127.0.0.1:4180
 ```
+
+### Run
+
+```powershell
+npm run dev                    # data:up + web:build + serve
+```
+
+Open **http://127.0.0.1:4180** for the landing page (what the autopilot does, with a 3D view of the signed ledger), then **Open the app**. The app has four sections, each with its own URL: **Today** (`/app`, run a cycle and watch its six stages), **Decisions** (`/decisions`, every decision with its explanation), **Ledger** (`/ledger`, the signed chain and the tamper demo) and **Replays** (`/replays`, recorded cycles). **Ctrl K** opens search, and **Auto / Light / Dark** switches the theme (Auto follows the OS). Links made before `/app` existed, such as `/?replay=<cycle>` and `/?open=<decision>`, still open the app. Zetaris must already be running. To start only the web server: `npm run web:build && npm run serve`.
 
 CLI:
 
@@ -107,11 +124,14 @@ npm run reject  -- D-0002 --by "Name" --note "why"
 npm run replay  -- D-0001      # re-derive a decision and check signatures
 npm run verify                 # ledger chain + signatures
 npm run tamper-demo            # edit a copy of the ledger, watch verification fail
+npm run demo:reset             # start the demo from an empty ledger (archives the old one; keeps recordings)
 npm test                       # offline tests
 npm run conformance            # official Meterless suites: Markovian, H-MEM, Scout
 ```
 
 UI deep links: `?open=D-0002` opens a decision. `?replay=<cycleId>&speed=8` replays a saved cycle with its real timings, sped up.
+
+Before recording or presenting, run `npm run demo:reset` and then one cycle. A cycle does not repeat a move that already executed for the same data, so a rehearsal would otherwise remove the "EXECUTED $500" slip from the live run. **Watch recorded cycle** on the dashboard replays the newest finished cycle, so the demo still works if Zetaris or Nightshift is unavailable.
 
 ## Repository
 

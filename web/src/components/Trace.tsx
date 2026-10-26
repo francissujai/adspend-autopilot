@@ -3,6 +3,8 @@ import type { AutopilotEvent } from "../types";
 
 /** What the autopilot is doing right now, one line per step. */
 export function Trace({ events }: { events: AutopilotEvent[] }) {
+  const start = events.find((e) => e.type === "cycle.start");
+  const modelOff = start?.type === "cycle.start" && start.model.startsWith("template");
   const items = events.flatMap((e, i): { k: string; who: string; what: React.ReactNode }[] => {
     switch (e.type) {
       case "cycle.start":
@@ -10,11 +12,12 @@ export function Trace({ events }: { events: AutopilotEvent[] }) {
       case "evidence":
         return [{ k: `e${i}`, who: "Zetaris", what: <><span className="mono">{e.id}</span> {e.purpose.split(":")[0]}: {e.rows} rows in {e.ms} ms{e.error ? `, failed: ${e.error}` : ""}</> }];
       case "governance":
-        return [{ k: `g${i}`, who: "Zetaris", what: e.allowed ? <>Customer data is readable by this identity. Set the agent key.</> : <>Read of customer data refused, as configured</> }];
+        return [{ k: `g${i}`, who: "Zetaris", what: e.allowed ? <>Customer data is readable by this identity. Set the agent key.</> : e.unreachable ? <>Could not check customer-data access: Zetaris unreachable</> : <>Read of customer data refused, as configured</> }];
       case "scout":
         return [{ k: `c${i}`, who: "Scout", what: <><span className="mono">{e.id}</span> {e.intent}, risk {e.risk}{e.flags ? `, ${e.flags} flags` : ""}{e.contract ? ", contract signed" : ", no contract"} ({e.ms} ms)</> }];
       case "rationale":
-        return [{ k: `r${i}`, who: "Nemotron", what: <><span className="mono">{e.id}</span> explained{e.by === "template" ? " (template: model unavailable)" : e.model ? ` by ${e.model}` : ""}</> }];
+        if (e.by === "template") return [{ k: `r${i}`, who: "Template", what: <><span className="mono">{e.id}</span> explained{modelOff ? " (model off)" : " (model unavailable)"}</> }];
+        return [{ k: `r${i}`, who: "Nemotron", what: <><span className="mono">{e.id}</span> explained{e.model ? ` by ${e.model}` : ""}</> }];
       case "execution":
         return [{ k: `x${i}`, who: "Platform", what: e.receipt.ok ? <>{e.receipt.changes.map((c) => `${c.name} ${money(c.before)} to ${money(c.after)}`).join("; ")}</> : <>Refused: {e.receipt.reason}</> }];
       case "ledger":
@@ -29,8 +32,8 @@ export function Trace({ events }: { events: AutopilotEvent[] }) {
   });
   if (!items.length) return <p className="section-sub">Run a cycle to watch each step: data read through Zetaris, intent checks, decisions and signatures.</p>;
   return (
-    <ol className="trace" aria-live="polite">
-      {items.slice(-14).map((it) => (
+    <ol className="log">
+      {items.map((it) => (
         <li key={it.k}>
           <span className="who">{it.who}</span>
           <span className="what">{it.what}</span>

@@ -86,7 +86,7 @@ export interface Cycle {
   asOf: string;
   startedAt: string;
   identity: string;
-  governance: { probe: string; allowed: boolean; detail: string };
+  governance: { probe: string; allowed: boolean; unreachable?: boolean; detail: string };
   evidence: { id: string; purpose: string; sql: string; rowsSha256: string; rowCount: number; ms: number; error?: string }[];
   lines: Line[];
   decisions: string[];
@@ -115,7 +115,7 @@ export interface AppState {
 export type AutopilotEvent =
   | { type: "cycle.start"; cycleId: string; asOf: string; identity: string; model: string }
   | { type: "evidence"; id: string; purpose: string; rows: number; ms: number; error?: string }
-  | { type: "governance"; allowed: boolean; detail: string }
+  | { type: "governance"; allowed: boolean; unreachable?: boolean; detail: string }
   | { type: "lines"; lines: Line[] }
   | { type: "candidate"; id: string; source: string; request: string }
   | { type: "scout"; id: string; intent: string; band: string; risk: string; flags: number; contract: boolean; ms: number }
