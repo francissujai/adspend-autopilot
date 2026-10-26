@@ -114,10 +114,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [useModel, onEvent, refresh]);
 
-  const review = useCallback(async (id: string, outcome: "approved" | "rejected", note: string) => {
+  const review = useCallback(async (id: string, outcome: "approved" | "rejected", note: string, by: string) => {
     setError("");
     try {
-      const by = localStorage.getItem("reviewer") || "Marketer";
       await api.review(id, outcome, by, note);
       const s = await refresh();
       const d = s?.decisions.find((x) => x.id === id);

@@ -27,7 +27,7 @@ export interface Store {
   open: string | null;
   setOpen: (id: string | null) => void;
   run: () => Promise<void>;
-  review: (id: string, outcome: "approved" | "rejected", note: string) => Promise<void>;
+  review: (id: string, outcome: "approved" | "rejected", note: string, by: string) => Promise<void>;
   refresh: () => Promise<AppState | undefined>;
 }
 export const StoreCtx = createContext<Store | null>(null);

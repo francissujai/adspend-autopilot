@@ -45,7 +45,7 @@ export function Today() {
           <div className="slips">
             {s.decisions.length ? (
               s.decisions.map((d) => (
-                <DecisionSlip key={d.id} d={d} fresh={s.fresh.has(d.id)} onWhy={() => s.setOpen(d.id)} onReview={REPLAY ? undefined : (o, n) => s.review(d.id, o, n)} />
+                <DecisionSlip key={d.id} d={d} fresh={s.fresh.has(d.id)} onWhy={() => s.setOpen(d.id)} onReview={REPLAY ? undefined : (o, n, b) => s.review(d.id, o, n, b)} />
               ))
             ) : (
               <Empty title={REPLAY ? "Replaying the recorded cycle" : "No decisions yet"}>

@@ -75,9 +75,10 @@ const MIME: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js
 function serveStatic(res: http.ServerResponse, urlPath: string) {
   const file = path.normalize(path.join(WEB, urlPath === "/" ? "index.html" : urlPath));
   // A missing file with an extension (robots.txt, a stale asset) is a 404; extension-less paths are app sections.
-  const exists = file.startsWith(WEB) && fs.existsSync(file) && fs.statSync(file).isFile();
+  const inside = file.startsWith(WEB + path.sep);
+  const exists = inside && fs.existsSync(file) && fs.statSync(file).isFile();
   if (!exists && path.extname(urlPath)) return json(res, 404, { error: "not found" });
-  const safe = file.startsWith(WEB) && fs.existsSync(file) && fs.statSync(file).isFile() ? file : path.join(WEB, "index.html");
+  const safe = inside && fs.existsSync(file) && fs.statSync(file).isFile() ? file : path.join(WEB, "index.html");
   if (!fs.existsSync(safe)) return json(res, 404, { error: "web UI not built: run npm run web:build" });
   res.writeHead(200, { "Content-Type": MIME[path.extname(safe)] ?? "application/octet-stream" });
   fs.createReadStream(safe).pipe(res);

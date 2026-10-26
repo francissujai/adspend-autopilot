@@ -33,3 +33,6 @@ playwright-report/
 
 before-revamp-screenshots/
 revamp-screenshots/
+
+# Office lock files
+~$*

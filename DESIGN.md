@@ -22,9 +22,8 @@ The server already returns the app for unknown paths, so these sections need no 
 
 ## Design system (revamp v2)
 
-The three products share one foundation, defined once in each app's `src/foundation.css`. Components use the names in the app stylesheet, and each of those points at a foundation token, so no component holds a raw colour, size or duration.
+The foundation is defined once in `web/src/foundation.css`. Components use the names in the app stylesheet, and each of those points at a foundation token, so no component holds a raw colour, size or duration.
 
-- **Source.** DESIGN_REFERENCE.md (a measured study of two institutional sites). The system is replicated, not their content, logos or licensed fonts.
 - **Gray ramp.** `#000`, `#06080C`, `#111`, `#1F1F1F`, `#282828`, `#595959`, `#969696`, `#A3A3A3`, `#D9D9D9`, `#F2F2F2`; paper `#F2EDE6`.
 - **Themes.** Dark is the base: black page, `#111` / `#1F1F1F` / `#282828` surfaces, `#969696` secondary text, translucent nav `rgba(22,22,23,0.8)`. Light is tuned separately: paper page, white surfaces, ink text, `#595959` secondary text, `#D9D9D9` lines. **Auto** follows the OS; **Light** and **Dark** override it and are kept in the browser (`data-theme` on `<html>`).
 - **Type.** Inter Variable for everything. Display 72/72, title 32/1.1, both at weight 400 with -0.03em tracking; eyebrow 14px uppercase +0.12em at 500; body 16/24; button 15/20 +0.3px at 600. Weight is kept for buttons and small labels. SQL and run output use the system monospace.

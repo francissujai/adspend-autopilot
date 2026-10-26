@@ -163,6 +163,7 @@ a { color: inherit; }
 .meter { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--paper-deep); vertical-align: 1px; margin-left: 6px; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--ink); }
 .slip-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.by-input { flex: 0 1 140px; min-width: 0; border: 1px solid var(--rule); border-radius: var(--r-control); padding: 9px 11px; font-size: 14px; background: var(--field); color: var(--ink); }
 .note-input { flex: 1 1 220px; min-width: 0; border: 1px solid var(--rule); border-radius: var(--r-control); padding: 9px 11px; font-size: 14px; background: var(--field); color: var(--ink); }
 .reviewed { font-size: var(--t-small); color: var(--ink-soft); }
 .stamp { position: absolute; right: 22px; top: 16px; padding: 6px 12px 5px; border: 3px solid currentColor; border-radius: 6px; font: 700 15px/1 var(--sans); letter-spacing: 0.08em; transform: rotate(-6deg); opacity: 0.9; mix-blend-mode: var(--stamp-blend); background: transparent; }
