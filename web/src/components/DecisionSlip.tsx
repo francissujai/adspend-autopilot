@@ -95,7 +95,7 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
             <Button disabled={busy || !by.trim()} onClick={() => review("approved")}>
               Approve
             </Button>
-            <Button disabled={busy || !by.trim()} onClick={() => review("rejected")}>
+            <Button danger disabled={busy || !by.trim()} onClick={() => review("rejected")}>
               Reject
             </Button>
           </>
