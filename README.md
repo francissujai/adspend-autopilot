@@ -112,7 +112,7 @@ copy .env.example .env         # fill in keys
 npm run dev                    # data:up + web:build + serve
 ```
 
-Open **http://127.0.0.1:4180** for the landing page (what the autopilot does, with a 3D view of the signed ledger), then **Open the app**. The app has four sections, each with its own URL: **Today** (`/app`, run a cycle and watch its six stages), **Decisions** (`/decisions`, every decision with its explanation), **Ledger** (`/ledger`, the signed chain and the tamper demo) and **Replays** (`/replays`, recorded cycles). **Ctrl K** opens search, and **Auto / Light / Dark** switches the theme (Auto follows the OS). Links made before `/app` existed, such as `/?replay=<cycle>` and `/?open=<decision>`, still open the app. Zetaris must already be running. To start only the web server: `npm run web:build && npm run serve`.
+Open **http://127.0.0.1:4180** for the landing page (what the autopilot does, with one real decision moving from data to the signed ledger), then **Open the app**. The app has four sections, each with its own URL: **Today** (`/app`, run a cycle and watch its six stages), **Decisions** (`/decisions`, every decision with its explanation), **Ledger** (`/ledger`, the signed chain and the tamper demo) and **Replays** (`/replays`, recorded cycles). **Ctrl K** opens search, and **Auto / Light / Dark** switches the theme (Auto follows the OS). Links made before `/app` existed, such as `/?replay=<cycle>` and `/?open=<decision>`, still open the app. Zetaris must already be running. To start only the web server: `npm run web:build && npm run serve`.
 
 CLI:
 
