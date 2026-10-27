@@ -110,6 +110,8 @@ export interface AppState {
   platforms?: { budgets: Record<string, { platform: string; name: string; dailyBudget: number }> };
   ledger: { verify: { ok: boolean; entries: number; firstBad?: { seq: number; reason: string } }; entries: LedgerRow[] };
   savedCycles: string[];
+  /** Set when the server shows the committed sample cycle because this machine has no ledger yet. */
+  sample?: { cycleId: string; source: string };
 }
 
 export type AutopilotEvent =

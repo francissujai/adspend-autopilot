@@ -38,7 +38,7 @@ export function archiveRunState(dir = DATA_DIR, archiveRoot = ARCHIVE_DIR): { ar
   }
   return { archivedTo: to, moved };
 }
-const REGISTRY = path.join(ROOT, "src", "autopilot", "registry.json");
+export const REGISTRY = path.join(ROOT, "src", "autopilot", "registry.json");
 const AGENT = { id: "autopilot", role: "autopilot-agent" };
 
 export interface DecisionRecord {
@@ -107,13 +107,7 @@ export class Autopilot {
   }
 
   private classify(c: Candidate): ScoutDecision {
-    return this.scout.decide({
-      prompt: c.request,
-      user: AGENT,
-      surface: "api",
-      parameters: { amount_usd: c.amountUsd, ...(c.metrics.share_of_source !== undefined ? { share_of_source: Number(c.metrics.share_of_source) } : {}) },
-      untrusted: c.untrusted,
-    });
+    return classifyCandidate(this.scout, c);
   }
 
   async runCycle(opts: { onEvent?: (e: AutopilotEvent) => void; useModel?: boolean } = {}): Promise<{ cycle: CycleRecord; decisions: DecisionRecord[] }> {
@@ -193,30 +187,9 @@ export class Autopilot {
   }
 
   /** Current view of every decision: its record plus later reviews and executions. */
-  state(): { decisions: (DecisionRecord & { review?: { by: string; outcome: string; note?: string; at: string }; executions: ExecutionReceipt[] })[]; cycles: CycleRecord[]; platforms?: unknown } {
-    const entries = this.ledger.all();
-    const decisions = entries.filter((e) => e.type === "decision").map((e) => ({ ...(e.payload as DecisionRecord), executions: [] as ExecutionReceipt[] } as DecisionRecord & { review?: { by: string; outcome: string; note?: string; at: string }; executions: ExecutionReceipt[] }));
-    const byId = new Map(decisions.map((d) => [d.id, d]));
-    for (const e of entries) {
-      if (e.type === "approval") {
-        const p = e.payload as { decisionId: string; by: string; outcome: "approved" | "rejected"; note?: string };
-        const d = byId.get(p.decisionId);
-        if (d) {
-          d.review = { by: p.by, outcome: p.outcome, note: p.note, at: e.at };
-          d.status = p.outcome;
-        }
-      }
-      if (e.type === "execution") {
-        const p = e.payload as { decisionId: string; receipt: ExecutionReceipt };
-        byId.get(p.decisionId)?.executions.push(p.receipt);
-      }
-    }
+  state(): AutopilotState {
     const platformFile = path.join(this.dir, "platform-state.json");
-    return {
-      decisions: decisions.reverse(),
-      cycles: entries.filter((e) => e.type === "cycle").map((e) => e.payload as CycleRecord).reverse(),
-      platforms: fs.existsSync(platformFile) ? JSON.parse(fs.readFileSync(platformFile, "utf-8")) : undefined,
-    };
+    return foldState(this.ledger.all(), fs.existsSync(platformFile) ? JSON.parse(fs.readFileSync(platformFile, "utf-8")) : undefined);
   }
 
   /** A human approves or rejects a held decision. Approval runs on a fresh contract (contracts are never extended). */
@@ -247,37 +220,94 @@ export class Autopilot {
    * ledger chain and the decision's Scout contract signature.
    */
   replay(decisionId: string) {
-    const entries = this.ledger.all();
-    const de = entries.find((e) => e.type === "decision" && (e.payload as DecisionRecord).id === decisionId) as LedgerEntry<DecisionRecord> | undefined;
-    if (!de) throw new Error(`unknown decision ${decisionId}`);
-    const d = de.payload;
-    const ce = entries.find((e) => e.type === "cycle" && (e.payload as CycleRecord).cycleId === d.cycleId) as LedgerEntry<CycleRecord>;
-    const evidenceIntact = d.evidenceDigest.every((x) => ce.payload.evidence.find((e) => e.id === x.id)?.rowsSha256 === x.rowsSha256);
-    const snapshot = buildSnapshot(ce.payload.asOf, ce.payload.evidence, ce.payload.governance);
-    const c = generateCandidates(snapshot).find((x) => x.key === d.candidate.key);
-    const sd = c ? this.classify(c) : undefined;
-    const conf = c ? confidence(c, snapshot, d.trust) : undefined;
-    const st = sd && conf ? decideStatus(sd, conf) : undefined;
-    const compare = {
-      action: [d.candidate.request, c?.request],
-      amountUsd: [d.candidate.amountUsd, c?.amountUsd],
-      intent: [d.scout.intent, sd?.executionContract?.intent.primary.id ?? sd?.candidates[0]?.intent],
-      risk: [d.scout.risk.level, sd?.risk.level],
-      confidence: [d.confidence.value, conf?.value],
-      // The decision entry holds the policy outcome at decision time; later reviews are separate entries.
-      status: [d.status, st?.status],
-    } as Record<string, [unknown, unknown]>;
-    const diffs = Object.entries(compare).filter(([, [a, b]]) => JSON.stringify(a) !== JSON.stringify(b)).map(([k]) => k);
     const pub = createPublicKey(fs.readFileSync(path.join(this.dir, "ledger", "ledger-public-key.pem")));
-    const ledger = verifyLedger(entries, pub);
-    const contract = d.scout.contract ? this.scout.verifyContract(d.scout.contract, { now: Date.parse(d.scout.contract.issuedAt) + 1, requireApprovals: false }) : { ok: false, reason: "no contract (blocked)" };
-    return { decisionId, match: !!c && diffs.length === 0, diffs, compare, evidenceIntact, ledger, contract, ledgerSeq: de.seq, ledgerHash: de.hash };
+    return replayDecision(this.ledger.all(), pub, this.scout, decisionId);
   }
 
   verify() {
     const pub = createPublicKey(fs.readFileSync(path.join(this.dir, "ledger", "ledger-public-key.pem")));
     return verifyLedger(this.ledger.all(), pub);
   }
+}
+
+export type StateDecision = DecisionRecord & { review?: { by: string; outcome: string; note?: string; at: string }; executions: ExecutionReceipt[] };
+export interface AutopilotState {
+  decisions: StateDecision[];
+  cycles: CycleRecord[];
+  platforms?: unknown;
+}
+
+/** Folds ledger entries into the current view: decisions with their reviews and executions, newest first. */
+export function foldState(entries: LedgerEntry[], platforms?: unknown): AutopilotState {
+  const decisions = entries.filter((e) => e.type === "decision").map((e) => ({ ...(e.payload as DecisionRecord), executions: [] as ExecutionReceipt[] }) as StateDecision);
+  const byId = new Map(decisions.map((d) => [d.id, d]));
+  for (const e of entries) {
+    if (e.type === "approval") {
+      const p = e.payload as { decisionId: string; by: string; outcome: "approved" | "rejected"; note?: string };
+      const d = byId.get(p.decisionId);
+      if (d) {
+        d.review = { by: p.by, outcome: p.outcome, note: p.note, at: e.at };
+        d.status = p.outcome;
+      }
+    }
+    if (e.type === "execution") {
+      const p = e.payload as { decisionId: string; receipt: ExecutionReceipt };
+      byId.get(p.decisionId)?.executions.push(p.receipt);
+    }
+  }
+  return {
+    decisions: decisions.reverse(),
+    cycles: entries.filter((e) => e.type === "cycle").map((e) => e.payload as CycleRecord).reverse(),
+    platforms,
+  };
+}
+
+/** Scout classification of a candidate, as the agent identity. */
+export function classifyCandidate(scout: Scout, c: Candidate): ScoutDecision {
+  return scout.decide({
+    prompt: c.request,
+    user: AGENT,
+    surface: "api",
+    parameters: { amount_usd: c.amountUsd, ...(c.metrics.share_of_source !== undefined ? { share_of_source: Number(c.metrics.share_of_source) } : {}) },
+    untrusted: c.untrusted,
+  });
+}
+
+export type ContractCheck = { ok: boolean; reason?: string };
+
+/**
+ * Replay over any ledger: rebuild the snapshot from the stored rows, re-run the
+ * deterministic pipeline and compare. `checkContract` overrides the contract
+ * signature check (the sample ledger's HMAC secret is not published).
+ */
+export function replayDecision(entries: LedgerEntry[], pub: ReturnType<typeof createPublicKey>, scout: Scout, decisionId: string, checkContract?: (c: ExecutionContract) => ContractCheck) {
+  const de = entries.find((e) => e.type === "decision" && (e.payload as DecisionRecord).id === decisionId) as LedgerEntry<DecisionRecord> | undefined;
+  if (!de) throw new Error(`unknown decision ${decisionId}`);
+  const d = de.payload;
+  const ce = entries.find((e) => e.type === "cycle" && (e.payload as CycleRecord).cycleId === d.cycleId) as LedgerEntry<CycleRecord>;
+  const evidenceIntact = d.evidenceDigest.every((x) => ce.payload.evidence.find((e) => e.id === x.id)?.rowsSha256 === x.rowsSha256);
+  const snapshot = buildSnapshot(ce.payload.asOf, ce.payload.evidence, ce.payload.governance);
+  const c = generateCandidates(snapshot).find((x) => x.key === d.candidate.key);
+  const sd = c ? classifyCandidate(scout, c) : undefined;
+  const conf = c ? confidence(c, snapshot, d.trust) : undefined;
+  const st = sd && conf ? decideStatus(sd, conf) : undefined;
+  const compare = {
+    action: [d.candidate.request, c?.request],
+    amountUsd: [d.candidate.amountUsd, c?.amountUsd],
+    intent: [d.scout.intent, sd?.executionContract?.intent.primary.id ?? sd?.candidates[0]?.intent],
+    risk: [d.scout.risk.level, sd?.risk.level],
+    confidence: [d.confidence.value, conf?.value],
+    // The decision entry holds the policy outcome at decision time; later reviews are separate entries.
+    status: [d.status, st?.status],
+  } as Record<string, [unknown, unknown]>;
+  const diffs = Object.entries(compare).filter(([, [a, b]]) => JSON.stringify(a) !== JSON.stringify(b)).map(([k]) => k);
+  const ledger = verifyLedger(entries, pub);
+  const contract: ContractCheck = !d.scout.contract
+    ? { ok: false, reason: "no contract (blocked)" }
+    : checkContract
+      ? checkContract(d.scout.contract)
+      : scout.verifyContract(d.scout.contract, { now: Date.parse(d.scout.contract.issuedAt) + 1, requireApprovals: false });
+  return { decisionId, match: !!c && diffs.length === 0, diffs, compare, evidenceIntact, ledger, contract, ledgerSeq: de.seq, ledgerHash: de.hash };
 }
 
 function safeProvider(): ReceiptLog | undefined {

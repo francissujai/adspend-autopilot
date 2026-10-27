@@ -31,7 +31,7 @@ export function Replays() {
               const cycle = state?.cycles.find((c) => c.cycleId === id);
               return (
                 <div className="drow" key={id} style={{ gridTemplateColumns: "minmax(0,1fr) auto", cursor: "default" }}>
-                  <span className="req"><b>{cycleTime(id)}</b><span><span className="mono">{id}</span>{cycle ? `, data as of ${cycle.asOf}, ${cycle.decisions.length} decisions` : ""}</span></span>
+                  <span className="req"><b>{cycleTime(id)}</b><span><span className="mono">{id}</span>{cycle ? `, data as of ${cycle.asOf}, ${cycle.decisions.length} decisions` : ""}{state?.sample?.cycleId === id ? ` (sample from ${state.sample.source})` : ""}</span></span>
                   <ButtonLink href={`/app?replay=${encodeURIComponent(id)}&speed=${SPEED}`}>Watch replay</ButtonLink>
                 </div>
               );
