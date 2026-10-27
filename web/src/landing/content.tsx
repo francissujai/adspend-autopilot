@@ -1,5 +1,5 @@
 import type { LandingContent } from "./Landing";
-import { DecisionPreview } from "./DecisionPreview";
+import { CHAPTERS, FilmScene } from "./film-scene";
 
 export const content: LandingContent = {
   product: "Ad Spend Autopilot",
@@ -9,7 +9,6 @@ export const content: LandingContent = {
   scene: "chain",
   accent: "#5FD39A",
   heroLabel: "A ring of linked blocks, one per signed ledger entry, assembling and lighting up as they are signed",
-  heroCaption: "One block per signed ledger entry: the chain assembles as you scroll, and a pulse walks it the way a signature does.",
   facts: [
     { title: "Read-only, enforced by Zetaris", body: "The agent's role cannot read customer data. Every cycle probes it and shows the result." },
     { title: "Ed25519 signed ledger", body: "Each decision links to the one before it. Editing history breaks the chain." },
@@ -25,14 +24,9 @@ export const content: LandingContent = {
     { title: "Sign the ledger", body: "Each entry is hashed to the one before it and signed with Ed25519." },
   ],
   why: "Ad platforms grade their own homework. The autopilot checks every claim against what you actually sold, moves money only when the numbers hold, and signs each move so nobody can quietly rewrite it later.",
-  storyTitle: "One decision, step by step.",
-  story: [
-    { title: "Read the data", body: "Ad platforms and your own orders are read through Zetaris, read only." },
-    { title: "Check the claim", body: "The platform says 5.58x. Your orders say 0.97x. The autopilot believes the orders." },
-    { title: "Let policy decide", body: "A $5,000 shift is over the limit an agent may move alone, so it is held for a person." },
-    { title: "Sign it", body: "The decision, held or run, is hashed to the entry before it and signed with Ed25519." },
-  ],
-  storyView: (step) => <DecisionPreview step={step} />,
+  filmLabel: "One decision, scrolled",
+  chapters: CHAPTERS,
+  film: (p) => <FilmScene p={p} />,
   closing: "Spend only where the revenue is real.",
   footer: "Ad Spend Autopilot. Built with Zetaris, Meterless engines and NVIDIA Nemotron for the Open Agent Hackathon 2026.",
 };
