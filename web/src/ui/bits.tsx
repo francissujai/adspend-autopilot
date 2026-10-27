@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { m } from "motion/react";
+import { SPRING } from "../motion";
 
 export function Segmented<T extends string>({ value, onChange, options, label }: {
   value: T; onChange: (v: T) => void; options: { value: T; label: string; count?: number }[]; label: string;
 }) {
+  const id = useId();
   return (
     <div className="segmented" role="tablist" aria-label={label}
       onKeyDown={(e) => {
@@ -14,7 +17,8 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
       }}>
       {options.map((o) => (
         <button key={o.value} role="tab" aria-selected={o.value === value} tabIndex={o.value === value ? 0 : -1} onClick={() => onChange(o.value)}>
-          {o.label}{o.count !== undefined && <span className="n">{o.count}</span>}
+          {o.value === value && <m.span layoutId={`seg-${id}`} className="seg-ind" transition={SPRING} />}
+          <span className="seg-label">{o.label}{o.count !== undefined && <span className="n">{o.count}</span>}</span>
         </button>
       ))}
     </div>

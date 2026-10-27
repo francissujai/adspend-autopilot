@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { WhyDrawer } from "./components/WhyDrawer";
 import { REPLAY } from "./replay";
+import { AnimatePresence, m } from "motion/react";
+import { PAGE, SPRING } from "./motion";
 import { ThemeButton } from "./theme";
 import { Button } from "./ui/Button";
 import { MenuSheet } from "./ui/MenuSheet";
@@ -85,6 +87,7 @@ export default function App() {
             {TABS.map((t) => (
               <a key={t.id} href={PATHS[t.id]} aria-current={section === t.id ? "page" : undefined} onClick={(e) => { e.preventDefault(); go(t.id); }}>
                 {t.label}{t.id === "decisions" && waiting > 0 && <span className="badge" aria-label={`${waiting} waiting for you`}>{waiting}</span>}
+                {section === t.id && <m.span layoutId="nav-underline" className="nav-underline" transition={SPRING} />}
               </a>
             ))}
           </nav>
@@ -96,6 +99,7 @@ export default function App() {
           </div>
         </div>
       </header>
+      <AnimatePresence>
       {menu && (
         <MenuSheet title="Ad Spend Autopilot" onClose={() => setMenu(false)}
           links={TABS.map((t) => ({ label: t.id === "decisions" && waiting > 0 ? `${t.label} (${waiting})` : t.label, href: PATHS[t.id], current: section === t.id, onSelect: () => go(t.id) }))}>
@@ -103,6 +107,7 @@ export default function App() {
           <ThemeButton />
         </MenuSheet>
       )}
+      </AnimatePresence>
       <div className="app">
         <div className="trust" role="group" aria-label="Trust status">
           {governance && (governance.unreachable ? (
@@ -123,18 +128,20 @@ export default function App() {
         </div>
         <hr className="rule" />
 
-        <main id="main">
+        <m.main id="main" key={section} {...PAGE}>
           {section === "today" && <Today />}
           {section === "decisions" && <Decisions />}
           {section === "ledger" && <LedgerView />}
           {section === "replays" && <Replays />}
-        </main>
+        </m.main>
       </div>
 
-      {openDecision && (
-        <WhyDrawer d={openDecision} ledgerSeq={ledgerSeq} onClose={() => s.setOpen(null)} onAll={() => { s.setOpen(null); go("decisions"); }} />
-      )}
-      {palette && <Palette commands={commands} onClose={() => setPalette(false)} />}
+      <AnimatePresence>
+        {openDecision && (
+          <WhyDrawer key={openDecision.id} d={openDecision} ledgerSeq={ledgerSeq} onClose={() => s.setOpen(null)} onAll={() => { s.setOpen(null); go("decisions"); }} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>{palette && <Palette commands={commands} onClose={() => setPalette(false)} />}</AnimatePresence>
     </>
   );
 }

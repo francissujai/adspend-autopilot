@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { api, money, short } from "../api";
-import { DUR, gsap, reducedMotion, useGSAP } from "../motion";
+import { m } from "motion/react";
+import { SPRING, T_BASE } from "../motion";
 import type { Decision, ReplayResult } from "../types";
 import { Crumbs } from "../ui/bits";
 
@@ -16,9 +17,6 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
   const [error, setError] = useState("");
 
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
-  useGSAP(() => {
-    if (!reducedMotion()) gsap.from(panel.current, { xPercent: 100, duration: DUR.base });
-  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -53,8 +51,9 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
   const contract = d.scout.contract;
   return (
     <>
-      <div className="scrim" onClick={onClose} />
-      <aside className="drawer" ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Why the autopilot decided ${d.id}`}>
+      <m.div className="scrim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={T_BASE} />
+      <m.aside className="drawer" ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Why the autopilot decided ${d.id}`}
+        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={SPRING}>
         <Button variant="tertiary" className="close" onClick={onClose}>
           Close
         </Button>
@@ -193,7 +192,7 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
           </table>
         )}
         {error && <div className="tamper">{error}</div>}
-      </aside>
+      </m.aside>
     </>
   );
 }

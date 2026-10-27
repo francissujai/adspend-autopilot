@@ -7,8 +7,8 @@
   --s1: var(--ds-s-1); --s2: var(--ds-s-2); --s3: var(--ds-s-3); --s4: var(--ds-s-4); --s5: var(--ds-s-5); --s6: var(--ds-s-6); --s7: var(--ds-s-7); --s8: var(--ds-s-8);
   --r-slip: var(--ds-r-card); --r-control: var(--ds-r-button); --r-panel: var(--ds-r-panel); --r-sheet: var(--ds-r-panel);
   --content: 1240px;
-  --dur-fast: var(--ds-dur-hover); --dur: var(--ds-dur-panel);
-  --ease: var(--ds-ease-out);
+  --dur-fast: var(--ds-dur-fast); --dur: var(--ds-dur-base);
+  --ease: var(--ds-ease-ui);
 
   --paper: var(--ds-bg); --paper-deep: var(--ds-surface-3); --slip: var(--ds-surface-1); --field: var(--ds-surface-1);
   --ink: var(--ds-text); --ink-soft: var(--ds-text-2); --ink-faint: var(--ds-text-2);
@@ -71,7 +71,10 @@ a { color: inherit; }
 
 .segmented { display: inline-flex; gap: 2px; padding: 3px; background: var(--paper-deep); border-radius: 10px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .segmented button { flex: none; border: 0; background: transparent; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: var(--t-small); font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
-.segmented button[aria-selected="true"] { background: var(--slip); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.segmented button { position: relative; }
+.segmented button[aria-selected="true"] { color: var(--ink); }
+.seg-ind { position: absolute; inset: 0; border-radius: 7px; background: var(--slip); box-shadow: inset 0 0 0 1px var(--rule); }
+.seg-label { position: relative; }
 .segmented .n { margin-inline-start: 6px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------------------- run panel */

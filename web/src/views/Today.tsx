@@ -1,11 +1,12 @@
 import { useRef } from "react";
+import { T_BASE } from "../motion";
+import { AnimatePresence, m } from "motion/react";
 import { ButtonLink } from "../ui/Button";
 import { DecisionSlip } from "../components/DecisionSlip";
 import { FlowBoard } from "../components/FlowBoard";
 import { LedgerChain } from "../components/LedgerChain";
 import { RunPanel } from "../components/RunPanel";
 import { money } from "../api";
-import { enter, useGSAP } from "../motion";
 import { REPLAY } from "../replay";
 import { useStore } from "../store-context";
 import { Empty, TodaySkeleton } from "../ui/bits";
@@ -13,7 +14,6 @@ import { Empty, TodaySkeleton } from "../ui/bits";
 export function Today() {
   const s = useStore();
   const root = useRef<HTMLDivElement>(null);
-  useGSAP(() => { if (!s.loading) enter(".reveal"); }, { scope: root, dependencies: [s.loading] });
   if (s.loading) return <div className="page"><TodaySkeleton /></div>;
 
   const moved = s.decisions.filter((d) => d.status === "auto-executed").reduce((sum, d) => sum + d.candidate.amountUsd, 0);
@@ -21,14 +21,14 @@ export function Today() {
   const waiting = s.decisions.filter((d) => d.status === "awaiting-approval").length;
 
   return (
-    <div className="page" ref={root}>
+    <m.div className="page" ref={root} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={T_BASE}>
       <div className="today">
-        <div className="reveal">
+        <div>
           <h1 className="hero-title">Budget moves you can audit.</h1>
           <p className="lede">The autopilot reads Meta, Google and your own orders, moves money to what earns on real revenue, and signs every decision.</p>
           <RunPanel recorded={recorded} />
         </div>
-        <div className="reveal">
+        <div>
           <FlowBoard lines={s.lines} budgets={s.budgets} move={s.move} onMoveDone={s.onMoveDone} />
         </div>
       </div>
@@ -36,7 +36,7 @@ export function Today() {
       {s.error && s.status !== "failed" && <div className="tamper" role="alert" style={{ marginTop: 24 }}>{s.error}</div>}
 
       <div className="cols" style={{ marginTop: 40 }}>
-        <section className="reveal">
+        <section>
           <h2 className="section-title">{REPLAY ? "Decisions in this cycle" : "This cycle"}</h2>
           <p className="section-sub">
             {s.decisions.length
@@ -45,9 +45,11 @@ export function Today() {
           </p>
           <div className="slips">
             {s.decisions.length ? (
-              s.decisions.map((d) => (
-                <DecisionSlip key={d.id} d={d} fresh={s.fresh.has(d.id)} onWhy={() => s.setOpen(d.id)} onReview={REPLAY ? undefined : (o, n, b) => s.review(d.id, o, n, b)} />
-              ))
+              <AnimatePresence initial={false}>
+                {s.decisions.map((d) => (
+                  <DecisionSlip key={d.id} d={d} fresh={s.fresh.has(d.id)} onWhy={() => s.setOpen(d.id)} onReview={REPLAY ? undefined : (o, n, b) => s.review(d.id, o, n, b)} />
+                ))}
+              </AnimatePresence>
             ) : (
               <Empty title={REPLAY ? "Replaying the recorded cycle" : "No decisions yet"}>
                 {REPLAY ? "Decisions appear as they did when the cycle ran." : <>Run a cycle and the autopilot proposes moves from this week's data.{recorded ? " No Zetaris? Watch a recorded cycle instead." : ""}</>}
@@ -56,8 +58,8 @@ export function Today() {
             )}
           </div>
         </section>
-        <aside className="reveal">{s.state && <LedgerChain ledger={s.state.ledger} compact />}</aside>
+        <aside>{s.state && <LedgerChain ledger={s.state.ledger} compact />}</aside>
       </div>
-    </div>
+    </m.div>
   );
 }

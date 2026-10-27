@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { gsap, reducedMotion, useGSAP } from "../motion";
+import { m } from "motion/react";
+import { NUDGE, SPRING, T_BASE, T_FAST } from "../motion";
 
 export interface Command { id: string; label: string; hint: string; run: () => void }
 
@@ -7,18 +8,17 @@ export interface Command { id: string; label: string; hint: string; run: () => v
 export function Palette({ commands, onClose }: { commands: Command[]; onClose: () => void }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
-  const box = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
-  useGSAP(() => { if (!reducedMotion()) gsap.from(box.current, { opacity: 0, duration: 0.15 }); });
   const shown = useMemo(() => commands.filter((c) => c.label.toLowerCase().includes(q.trim().toLowerCase())), [commands, q]);
   useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${sel}"]`)?.scrollIntoView({ block: "nearest" }); }, [sel]);
   useEffect(() => () => { if (opener?.isConnected) opener.focus(); }, [opener]);
   const pick = (c?: Command) => { if (!c) return; onClose(); c.run(); };
 
   return (
-    <div className="palette-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="palette" ref={box} role="dialog" aria-modal="true" aria-label="Command palette">
+    <m.div className="palette-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={T_BASE}>
+      <m.div className="palette" role="dialog" aria-modal="true" aria-label="Command palette"
+        initial={{ opacity: 0, y: -NUDGE, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ ...SPRING, opacity: T_FAST }}>
         <input autoFocus placeholder="Search sections, decisions and actions" value={q} aria-label="Search" role="combobox" aria-expanded aria-controls="palette-list"
           aria-activedescendant={shown[sel] ? `cmd-${shown[sel].id}` : undefined} onChange={(e) => { setQ(e.target.value); setSel(0); }}
           onKeyDown={(e) => {
@@ -37,7 +37,7 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose: (
           ))}
           {!shown.length && <li style={{ padding: 16, color: "var(--ink-soft)" }}>Nothing matches “{q}”.</li>}
         </ul>
-      </div>
-    </div>
+      </m.div>
+    </m.div>
   );
 }

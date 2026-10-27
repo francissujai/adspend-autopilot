@@ -2,7 +2,6 @@ import { useRef } from "react";
 import { ButtonLink } from "../ui/Button";
 import { SPEED } from "../replay";
 import { useStore } from "../store-context";
-import { enter, useGSAP } from "../motion";
 import { Empty } from "../ui/bits";
 
 /** Turns a cycle id like C-20261026031020 into "Oct 26, 03:10 UTC". */
@@ -16,17 +15,16 @@ function cycleTime(id: string) {
 export function Replays() {
   const { state } = useStore();
   const root = useRef<HTMLDivElement>(null);
-  useGSAP(() => enter(".reveal"), { scope: root });
   const saved = state?.savedCycles ?? [];
   return (
     <div className="page" ref={root}>
-      <div className="page-head reveal">
+      <div className="page-head">
         <div>
           <h1>Replays</h1>
           <p>Finished cycles are recorded with their real timing. Replaying one shows the run as it happened, with no Zetaris or model needed.</p>
         </div>
       </div>
-      <div className="reveal">
+      <div>
         {saved.length ? (
           <div className="dtable">
             {saved.map((id) => {

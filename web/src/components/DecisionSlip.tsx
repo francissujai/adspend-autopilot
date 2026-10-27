@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { m } from "motion/react";
 import { Button } from "../ui/Button";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
+import { NUDGE, T_BASE } from "../motion";
 import { money } from "../api";
 import type { Decision } from "../types";
 
@@ -21,19 +21,10 @@ const SOURCE: Record<string, string> = {
 
 /** A decision as a signed slip. A new decision fades in once. */
 export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh: boolean; onWhy: () => void; onReview?: (outcome: "approved" | "rejected", note: string, by: string) => Promise<void> }) {
-  const root = useRef<HTMLElement>(null);
   const [note, setNote] = useState("");
   const [by, setBy] = useState(() => localStorage.getItem("reviewer") ?? "");
   const [busy, setBusy] = useState(false);
   const s = STAMP[d.status];
-
-  useGSAP(
-    () => {
-      if (!fresh || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      gsap.from(root.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
-    },
-    { scope: root, dependencies: [d.id, d.status], revertOnUpdate: true },
-  );
 
   const review = async (outcome: "approved" | "rejected") => {
     const name = by.trim();
@@ -50,11 +41,11 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
   const c = d.candidate;
   const isShift = c.type === "budget.shift" && c.from;
   return (
-    <article className={`slip ${s.cls}`} ref={root} aria-label={`${d.id}: ${s.word.toLowerCase()}`}>
-      <div className={`stamp ${s.cls}`}>
+    <m.article layout className={`slip ${s.cls}`} initial={fresh ? { opacity: 0, y: NUDGE } : false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={T_BASE} aria-label={`${d.id}: ${s.word.toLowerCase()}`}>
+      <m.div key={d.status} className={`stamp ${s.cls}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={T_BASE}>
         {s.word}
         <small>{s.sub}</small>
-      </div>
+      </m.div>
       <div className="slip-top">
         <span className="serial">{d.id}</span>
         <span className="source">{SOURCE[c.source] ?? c.source}</span>
@@ -107,6 +98,6 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
           </span>
         )}
       </div>
-    </article>
+    </m.article>
   );
 }
