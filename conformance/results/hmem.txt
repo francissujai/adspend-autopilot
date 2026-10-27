@@ -1,7 +1,7 @@
 $ HMEM_IMPL=src/engines/hmem/index.ts npx tsx conformance/hmem/runner.ts 
 # 2026-10-24T23:58:41.336Z
 
-H-MEM conformance: implementation = C:/Users/afsuj/Desktop/work/adspend-autopilot/src/engines/hmem/index.ts
+H-MEM conformance: implementation = src/engines/hmem/index.ts
 
   record-validation
     PASS rv-001 a record with no source is rejected by construction
