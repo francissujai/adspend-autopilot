@@ -1,0 +1,65 @@
+{
+  "budgets": {
+    "23851190001": {
+      "platform": "meta",
+      "name": "Retargeting - Cart Abandoners",
+      "dailyBudget": 1100
+    },
+    "23851190002": {
+      "platform": "meta",
+      "name": "Retargeting - Site Visitors 30d",
+      "dailyBudget": 500
+    },
+    "23851190003": {
+      "platform": "meta",
+      "name": "Prospecting - Lookalike 3%",
+      "dailyBudget": 1500
+    },
+    "23851190004": {
+      "platform": "meta",
+      "name": "Prospecting - Interests: Analytics",
+      "dailyBudget": 900
+    },
+    "23851190005": {
+      "platform": "meta",
+      "name": "Creative Test - UGC Video",
+      "dailyBudget": 300
+    },
+    "g-1001": {
+      "platform": "google",
+      "name": "Search - Brand",
+      "dailyBudget": 800
+    },
+    "g-1002": {
+      "platform": "google",
+      "name": "Search - Generic Analytics",
+      "dailyBudget": 1200
+    },
+    "g-1003": {
+      "platform": "google",
+      "name": "Display - Broad Awareness",
+      "dailyBudget": 500
+    },
+    "g-1004": {
+      "platform": "google",
+      "name": "PMax - Catalog",
+      "dailyBudget": 900
+    }
+  },
+  "changes": [
+    {
+      "at": "2026-10-25T00:25:10.362Z",
+      "lineId": "g-1003",
+      "before": 1000,
+      "after": 500,
+      "contractId": "01M5R73G6EJ9QG1HSKJ913NS8C"
+    },
+    {
+      "at": "2026-10-25T00:25:10.362Z",
+      "lineId": "23851190001",
+      "before": 600,
+      "after": 1100,
+      "contractId": "01M5R73G6EJ9QG1HSKJ913NS8C"
+    }
+  ]
+}

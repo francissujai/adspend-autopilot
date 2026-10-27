@@ -1,7 +1,7 @@
 $ SCOUT_IMPL=src/engines/scout/index.ts npx tsx evals/scout/runner/index.ts all
 # 2026-10-24T23:58:41.502Z
 Loaded 32 examples from v1/all
-Report written: C:\Users\afsuj\Desktop\work\adspend-autopilot\evals\scout\reports\latest.md
+Report written: evals\scout\reports\latest.md
 ┌─────────────────────┬─────────┐
 │ (index)             │ Values  │
 ├─────────────────────┼─────────┤

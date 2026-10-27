@@ -1,0 +1,21 @@
+Ad Spend Autopilot
+Copyright (c) 2026 Francis Sujai and the Ad Spend Autopilot team
+Licensed under the MIT License (see LICENSE).
+
+This repository includes third-party material from the Meterless project:
+
+  meterless/meterless, commit 1742dec
+  https://github.com/meterless/meterless
+  Licensed under the Apache License, Version 2.0
+
+  - conformance/hmem/runner.ts, conformance/hmem/vectors/vectors.json,
+    conformance/markovian/runner.ts: official engine conformance runners
+    (license text in conformance/LICENSE)
+  - evals/scout/: the official Scout Intent eval harness, regression set,
+    fixtures and thresholds (license text in evals/scout/LICENSE)
+
+These files are distributed under the Apache License 2.0, not the MIT License.
+They are copied from upstream for running the official suites against this
+repository's engine implementations in src/engines/. The engine
+implementations in src/engines/ were written by the team from the Meterless
+engine specifications and are covered by the MIT License.

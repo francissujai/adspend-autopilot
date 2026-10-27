@@ -13,6 +13,7 @@ import { createPublicKey } from "node:crypto";
 import { env, ROOT } from "./env.ts";
 import { Autopilot, DATA_DIR, type AutopilotEvent } from "./autopilot/autopilot.ts";
 import { verifyLedger, type LedgerEntry } from "./autopilot/ledger.ts";
+import { SampleCycle, useSample } from "./autopilot/sample.ts";
 
 const HOST = env("AUTOPILOT_HOST", "127.0.0.1");
 const PORT = Number(env("AUTOPILOT_PORT", "4180"));
@@ -95,7 +96,14 @@ function savedCycles(): string[] {
     .reverse();
 }
 
-function ledgerView(ap: Autopilot) {
+let sampleCache: SampleCycle | undefined;
+/** The committed sample cycle, while this machine has no ledger or recordings of its own (see src/autopilot/sample.ts). */
+function sample(): SampleCycle | undefined {
+  if (running || !useSample(DATA_DIR)) return undefined;
+  return (sampleCache ??= new SampleCycle());
+}
+
+function ledgerView(ap: { ledger: { all(): LedgerEntry[] }; verify: Autopilot["verify"] }) {
   const entries = ap.ledger.all();
   return {
     verify: ap.verify(),
@@ -117,7 +125,10 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   try {
     if (!p.startsWith("/api/")) return serveStatic(res, p);
-    const ap = new Autopilot();
+    const live = new Autopilot();
+    const demo = sample();
+    // Read-only views come from the sample when there is no local data; writes always go to the live autopilot.
+    const ap = demo ?? live;
     if (req.method === "GET" && p === "/api/state") {
       const s = ap.state();
       return json(res, 200, {
@@ -126,7 +137,8 @@ const server = http.createServer(async (req, res) => {
         cycles: s.cycles.map(({ evidence, ...c }) => ({ ...c, evidence: evidence.map(({ rows, ...e }) => ({ ...e, rowCount: rows.length })) })),
         platforms: s.platforms,
         ledger: ledgerView(ap),
-        savedCycles: savedCycles(),
+        savedCycles: demo ? [demo.cycleId] : savedCycles(),
+        sample: demo ? { cycleId: demo.cycleId, source: demo.source } : undefined,
       });
     }
     if (req.method === "POST" && p === "/api/cycle") {
@@ -152,6 +164,7 @@ const server = http.createServer(async (req, res) => {
     const saved = p.match(/^\/api\/cycles\/(C-\d{14})\/events$/);
     if (req.method === "GET" && saved) {
       const file = path.join(EVENTS_DIR, `${saved[1]}.events.jsonl`);
+      if (!fs.existsSync(file) && demo && saved[1] === demo.cycleId) return json(res, 200, demo.events());
       if (!fs.existsSync(file)) return json(res, 404, { error: "no saved events" });
       return json(res, 200, fs.readFileSync(file, "utf-8").split("\n").filter(Boolean).map((l) => JSON.parse(l)));
     }
@@ -160,7 +173,7 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req);
       const outcome = b.outcome === "approved" ? "approved" : b.outcome === "rejected" ? "rejected" : undefined;
       if (!outcome) return json(res, 400, { error: "outcome must be approved or rejected" });
-      const r = ap.review(review[1], { by: String(b.by || os.userInfo().username).slice(0, 60), outcome, note: b.note ? String(b.note).slice(0, 400) : undefined });
+      const r = live.review(review[1], { by: String(b.by || os.userInfo().username).slice(0, 60), outcome, note: b.note ? String(b.note).slice(0, 400) : undefined });
       return json(res, 200, { approvalSeq: r.approval.seq, receipt: r.receipt, memory: { id: r.memory.id, content: r.memory.content } });
     }
     const replay = p.match(/^\/api\/decisions\/(D-\d{4})\/replay$/);
@@ -179,7 +192,7 @@ const server = http.createServer(async (req, res) => {
       const original = payload.candidate.request;
       payload.candidate.amountUsd *= 10;
       payload.candidate.request = original.replace(/\$[\d,]+/, (m) => `$${(Number(m.replace(/[$,]/g, "")) * 10).toLocaleString("en-US")}`);
-      const pub = createPublicKey(fs.readFileSync(path.join(DATA_DIR, "ledger", "ledger-public-key.pem")));
+      const pub = demo ? demo.publicKey : createPublicKey(fs.readFileSync(path.join(DATA_DIR, "ledger", "ledger-public-key.pem")));
       return json(res, 200, { seq: target.seq, original, tampered: payload.candidate.request, result: verifyLedger(entries, pub), originalStillValid: ap.verify().ok });
     }
     json(res, 404, { error: "not found" });

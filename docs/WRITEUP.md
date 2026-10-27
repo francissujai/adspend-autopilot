@@ -50,7 +50,7 @@ A marketer opens any decision to see the rationale, the exact SQL and rows, the 
 - layered guards over the request **and the untrusted text it depends on**: injection patterns, RBAC, scope limits with auto and hard maxima, required approvals
 - HMAC-SHA256 contracts over canonical JSON, with a ULID, a 5-minute TTL and an approvals list, plus `verifyContract`
 
-It passes the **official Scout eval harness with every metric at 1.00** (intent top-1, top-3, injection precision, injection recall, tool precision) and a 0.094 clarification rate. Our `autopilot` policy pack adds the domain rules: auto-execute shifts up to $1,000/day and increases up to $500/day, and block above hard limits.
+On the **official Scout eval harness's fixture suite** (corpus v1, 32 examples) it scores **1.00 on every scored metric** (intent top-1, top-3, injection precision, injection recall, tool precision) with a 0.094 clarification rate. That suite is the harness's own fixtures, not a held-out set of ad-operations requests. Our `autopilot` policy pack adds the domain rules: auto-execute shifts up to $1,000/day and increases up to $500/day, and block above hard limits.
 
 **Policy.** Execute only when Scout issued a contract with no approvals required, confidence ≥ 0.75, and no evidence errors. Otherwise hold or block. The model is not consulted.
 
@@ -62,7 +62,7 @@ It passes the **official Scout eval harness with every metric at 1.00** (intent 
 
 **Execution.** Sandbox Meta and Google platforms (a local state file). They refuse any write without a Scout contract that verifies: correct signature, unexpired, within its dollar scope, approved when high-risk. Approval runs on a **freshly issued** contract, because the spec says contracts are never extended.
 
-**Interface.** A React and GSAP dashboard in a cheque-and-ledger visual language:
+**Interface.** A React dashboard (Motion for transitions, three.js for the landing page) in a cheque-and-ledger visual language:
 - a budget flow board where executed money visibly moves between lines
 - decision slips that receive a rubber stamp (EXECUTED, HELD, BLOCKED)
 - a "why I did this" drawer with replay
@@ -104,18 +104,18 @@ It passes the **official Scout eval harness with every metric at 1.00** (intent 
 | Engines | Meterless Scout Intent, H-MEM, Markovian (our implementations, official suites) |
 | Backend | Node 24, TypeScript, zero runtime dependencies |
 | Crypto | Ed25519 ledger signatures, HMAC-SHA256 contracts, SHA-256 evidence hashes (node:crypto) |
-| Frontend | React 19, Vite, GSAP (@gsap/react) |
+| Frontend | React 19, Vite, Motion, three.js (@react-three/fiber), Lenis |
 
 ## Challenges we ran into
 
-- **Scout Intent had no implementation.** We built it from the spec and iterated against the official harness, until the multi-intent and clarification rules held every metric at 1.00 without over-clarifying.
+- **Scout Intent had no implementation.** We built it from the spec and iterated against the official harness, until the multi-intent and clarification rules held every scored metric at 1.00 on the harness's fixture suite without over-clarifying.
 - **A silent Zetaris wrong-answer bug.** A query that reads the same table twice with different filters (two CTEs or a self-join) returned the first read's rows for both. Every evidence query reads each table once, using `SUM(CASE WHEN …)` for period comparisons. We reported it from our first project.
 - **Model latency.** Hosted Nemotron through Nightshift took 20–90 s per call. We kept the model off the decision path, so a cycle decides in about a second and explanations stream in as they arrive.
 - **Parameter extraction bit us once.** Scout guessed a "share of source" ratio from the first number in "Shift $500…" and hard-blocked a safe move. Now free-form numbers are never guessed from text, and a regression test covers it.
 
 ## Accomplishments we're proud of
 
-- An agent that **moves real money only on evidence it can prove**, and can show it.
+- An agent that **moves budget only on evidence it can prove**, and can show it. Budget moves go to sandbox platforms that stand in for the Meta and Google Ads APIs; no real ad account is touched.
 - **Replay that reproduces every decision exactly** from the ledger, plus detection of edits, deletions and reordering.
 - **Governance enforced by the data platform**, not by a prompt: Zetaris itself refuses the agent's attempt to read customer data.
 - A working **Scout Intent** implementation that passes the official evals, together with H-MEM (13/13) and Markovian (8/8).
@@ -135,4 +135,4 @@ It passes the **official Scout eval harness with every metric at 1.00** (intent 
 
 ## Built with
 
-zetaris · meterless · scout-intent · h-mem · markovian · nightshift · nvidia-nemotron · typescript · node · react · vite · gsap · postgres · docker
+zetaris · meterless · scout-intent · h-mem · markovian · nightshift · nvidia-nemotron · typescript · node · react · vite · motion · three.js · postgres · docker

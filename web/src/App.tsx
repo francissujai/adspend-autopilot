@@ -110,6 +110,11 @@ export default function App() {
       </AnimatePresence>
       <div className="app">
         <div className="trust" role="group" aria-label="Trust status">
+          {s.state?.sample && (
+            <span className="seal warn" title={`Shown because this machine has no ledger yet. Run a cycle to replace it. Files: ${s.state.sample.source}`}>
+              <span className="dot">S</span><b>Sample data</b><span className="hide-sm">recorded cycle {s.state.sample.cycleId}</span>
+            </span>
+          )}
           {governance && (governance.unreachable ? (
             <span className="seal muted" title={governance.detail}><span className="dot">?</span><b className="hide-sm">Customer-data access not checked</b></span>
           ) : (

@@ -5,7 +5,7 @@ Run these after every change.
 ## Automated
 
 ```powershell
-npm test                 # 6 offline tests (no stack needed)
+npm test                 # 12 offline tests (no stack needed)
 npm run typecheck
 npm --prefix web run lint
 npm run web:build
@@ -21,7 +21,7 @@ npm run smoke            # HTTP smoke tests
 - `SMOKE_REVIEW=1` also rejects the held decision. Reviews are permanent ledger entries.
 - `AUTOPILOT_URL` changes the server (default http://127.0.0.1:4180).
 
-Without Zetaris and without a saved cycle, the replay and tamper tests skip.
+On a machine with no ledger and no saved cycle, the server shows the committed sample cycle (docs/samples/), so the replay and tamper tests run against it.
 
 ## Manual (browser)
 
