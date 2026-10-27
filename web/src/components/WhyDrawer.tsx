@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../ui/Button";
 import { api, money, short } from "../api";
 import { DUR, gsap, reducedMotion, useGSAP } from "../motion";
 import type { Decision, ReplayResult } from "../types";
@@ -16,7 +17,7 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
 
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
   useGSAP(() => {
-    if (!reducedMotion()) gsap.from(panel.current, { xPercent: 100, duration: DUR.stamp + 0.1 });
+    if (!reducedMotion()) gsap.from(panel.current, { xPercent: 100, duration: DUR.base });
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -54,9 +55,9 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
     <>
       <div className="scrim" onClick={onClose} />
       <aside className="drawer" ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Why the autopilot decided ${d.id}`}>
-        <button className="btn ghost sm close" onClick={onClose}>
+        <Button variant="tertiary" className="close" onClick={onClose}>
           Close
-        </button>
+        </Button>
         <Crumbs items={[{ label: "Decisions", onClick: onAll }, { label: d.id }]} />
         <h2>{c.request}</h2>
         <div className="why">{d.rationale.text || "No explanation recorded."}</div>
@@ -157,9 +158,9 @@ export function WhyDrawer({ d, ledgerSeq, onClose, onAll }: { d: Decision; ledge
 
         <h3>Replay this decision</h3>
         <p className="byline">Rebuilds the inputs from the rows stored in the ledger, runs the same deterministic pipeline, and checks every signature.</p>
-        <button className="btn" onClick={runReplay} disabled={busy}>
+        <Button variant="primary" onClick={runReplay} disabled={busy}>
           {busy ? "Replaying" : "Replay this decision"}
-        </button>
+        </Button>
         {replay && (
           <table className="replay-table" style={{ marginTop: 12 }}>
             <tbody>

@@ -1,15 +1,16 @@
 import { useRef, useState } from "react";
+import { Button } from "../ui/Button";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { money } from "../api";
 import type { Decision } from "../types";
 
 const STAMP: Record<string, { cls: string; word: string; sub: string }> = {
-  "auto-executed": { cls: "exec", word: "EXECUTED", sub: "by autopilot" },
-  approved: { cls: "exec", word: "APPROVED", sub: "by a human" },
-  "awaiting-approval": { cls: "held", word: "HELD", sub: "needs a human" },
-  rejected: { cls: "block", word: "REJECTED", sub: "by a human" },
-  blocked: { cls: "block", word: "BLOCKED", sub: "by Scout" },
+  "auto-executed": { cls: "exec", word: "Executed", sub: "by autopilot" },
+  approved: { cls: "exec", word: "Approved", sub: "by a human" },
+  "awaiting-approval": { cls: "held", word: "Held", sub: "needs a human" },
+  rejected: { cls: "block", word: "Rejected", sub: "by a human" },
+  blocked: { cls: "block", word: "Blocked", sub: "by Scout" },
 };
 
 const SOURCE: Record<string, string> = {
@@ -18,7 +19,7 @@ const SOURCE: Record<string, string> = {
   "note-suggestion": "Proposed from a campaign note",
 };
 
-/** A decision as a signed slip. The stamp lands when the decision first appears. */
+/** A decision as a signed slip. A new decision fades in once. */
 export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh: boolean; onWhy: () => void; onReview?: (outcome: "approved" | "rejected", note: string, by: string) => Promise<void> }) {
   const root = useRef<HTMLElement>(null);
   const [note, setNote] = useState("");
@@ -29,11 +30,7 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
   useGSAP(
     () => {
       if (!fresh || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const tl = gsap.timeline();
-      tl.from(root.current, { y: 18, opacity: 0, duration: 0.45, ease: "power3.out" })
-        .from(".stamp", { scale: 2.6, rotation: -24, opacity: 0, duration: 0.32, ease: "power4.in" }, "+=0.15")
-        .to(root.current, { x: 3, duration: 0.05, yoyo: true, repeat: 3, ease: "none" })
-        .set(root.current, { x: 0 });
+      gsap.from(root.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
     },
     { scope: root, dependencies: [d.id, d.status], revertOnUpdate: true },
   );
@@ -88,19 +85,19 @@ export function DecisionSlip({ d, fresh, onWhy, onReview }: { d: Decision; fresh
         )}
       </div>
       <div className="slip-actions">
-        <button className="btn ghost" onClick={onWhy}>
+        <Button variant="tertiary" onClick={onWhy}>
           Why I did this
-        </button>
+        </Button>
         {d.status === "awaiting-approval" && onReview && (
           <>
             <input className="by-input" value={by} onChange={(e) => setBy(e.target.value)} placeholder="Your name" aria-label={`Reviewer name for ${d.id}`} />
             <input className="note-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for your decision (saved to the ledger)" aria-label={`Review note for ${d.id}`} />
-            <button className="btn exec" disabled={busy || !by.trim()} onClick={() => review("approved")}>
+            <Button disabled={busy || !by.trim()} onClick={() => review("approved")}>
               Approve
-            </button>
-            <button className="btn block" disabled={busy || !by.trim()} onClick={() => review("rejected")}>
+            </Button>
+            <Button disabled={busy || !by.trim()} onClick={() => review("rejected")}>
               Reject
-            </button>
+            </Button>
           </>
         )}
         {d.review && (

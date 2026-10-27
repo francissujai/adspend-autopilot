@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { WhyDrawer } from "./components/WhyDrawer";
 import { REPLAY } from "./replay";
 import { ThemeButton } from "./theme";
+import { Button } from "./ui/Button";
+import { MenuSheet } from "./ui/MenuSheet";
 import { Landing } from "./landing/Landing";
 import { content as landingContent } from "./landing/content";
 import { useStore } from "./store-context";
@@ -21,20 +23,11 @@ const TABS: { id: Section; label: string }[] = [
 const onLanding = () => location.pathname.replace(/\/+$/, "") === "" && !REPLAY && !new URLSearchParams(location.search).has("open");
 const sectionFromPath = (p: string): Section => (Object.entries(PATHS).find(([, v]) => v === (p.replace(/\/+$/, "") || "/"))?.[0] as Section) ?? "today";
 
-function BrandMark() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="7" style={{ fill: "var(--accent)" }} />
-      <circle cx="16" cy="16" r="9" fill="none" strokeWidth="2.4" strokeDasharray="3 2" style={{ stroke: "var(--on-accent)" }} />
-      <path d="M11.5 16.5l3 3 6-7" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--on-accent)" }} />
-    </svg>
-  );
-}
-
 export default function App() {
   const s = useStore();
   const [section, setSection] = useState<Section>(() => sectionFromPath(location.pathname));
   const [palette, setPalette] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [landing, setLanding] = useState(onLanding);
 
   const go = useCallback((next: Section) => {
@@ -85,21 +78,32 @@ export default function App() {
 
   return (
     <>
-      <div className="paper-bg" aria-hidden />
-      <div className="app">
-        <header className="bar">
-          <button className="brand" onClick={() => go("today")} aria-label="Ad Spend Autopilot, go to Today"><BrandMark />Ad Spend Autopilot</button>
-          <nav className="tabs" aria-label="Sections">
+      <header className="appbar">
+        <div className="appbar-in">
+          <a className="wordmark" href="/app" onClick={(e) => { e.preventDefault(); go("today"); }}>Ad Spend Autopilot</a>
+          <nav className="bar-links app-links" aria-label="Sections">
             {TABS.map((t) => (
-              <button key={t.id} className="tab" aria-current={section === t.id ? "page" : undefined} onClick={() => go(t.id)}>
+              <a key={t.id} href={PATHS[t.id]} aria-current={section === t.id ? "page" : undefined} onClick={(e) => { e.preventDefault(); go(t.id); }}>
                 {t.label}{t.id === "decisions" && waiting > 0 && <span className="badge" aria-label={`${waiting} waiting for you`}>{waiting}</span>}
-              </button>
+              </a>
             ))}
           </nav>
           <span className="spacer" />
-          <ThemeButton className="btn ghost sm" />
-          <button className="btn ghost sm" onClick={() => setPalette(true)}>Search <span className="kbd hide-sm">Ctrl K</span></button>
-        </header>
+          <div className="appbar-end">
+            <Button variant="tertiary" onClick={() => setPalette(true)}>Search <span className="kbd">Ctrl K</span></Button>
+            <ThemeButton />
+            <button type="button" className="menu-toggle" aria-expanded={menu} onClick={() => setMenu(true)}>Menu</button>
+          </div>
+        </div>
+      </header>
+      {menu && (
+        <MenuSheet title="Ad Spend Autopilot" onClose={() => setMenu(false)}
+          links={TABS.map((t) => ({ label: t.id === "decisions" && waiting > 0 ? `${t.label} (${waiting})` : t.label, href: PATHS[t.id], current: section === t.id, onSelect: () => go(t.id) }))}>
+          <Button onClick={() => { setMenu(false); setPalette(true); }}>Search</Button>
+          <ThemeButton />
+        </MenuSheet>
+      )}
+      <div className="app">
         <div className="trust" role="group" aria-label="Trust status">
           {governance && (governance.unreachable ? (
             <span className="seal muted" title={governance.detail}><span className="dot">?</span><b className="hide-sm">Customer-data access not checked</b></span>

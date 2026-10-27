@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { api, short } from "../api";
-import { gsap, reducedMotion, useGSAP } from "../motion";
+import { Button } from "../ui/Button";
 import type { AppState, TamperResult } from "../types";
 
 const LABEL: Record<string, string> = { cycle: "Cycle evidence", decision: "Decision", approval: "Human review", execution: "Budget change", memory: "Trust memory" };
@@ -10,20 +10,15 @@ export function LedgerChain({ ledger, compact = false }: { ledger: AppState["led
   const root = useRef<HTMLDivElement>(null);
   const [tamper, setTamper] = useState<TamperResult | null>(null);
   const [error, setError] = useState("");
-  const { contextSafe } = useGSAP({ scope: root });
-
-  const runTamper = contextSafe(async () => {
+  const runTamper = async () => {
     setError("");
     try {
       const r = await api.tamper();
       setTamper(r);
-      requestAnimationFrame(() => {
-        if (!reducedMotion()) gsap.fromTo(".broken", { x: -4 }, { x: 0, duration: 0.4, ease: "elastic.out(1,0.3)" });
-      });
     } catch (e) {
       setError((e as Error).message);
     }
-  });
+  };
 
   const broken = tamper?.result.firstBad?.seq;
   const all = [...ledger.entries].reverse();
@@ -62,9 +57,9 @@ export function LedgerChain({ ledger, compact = false }: { ledger: AppState["led
         <p className="section-sub">No entries yet.</p>
       )}
       {compact && all.length > entries.length && <p className="runmeta">Showing the latest {entries.length} of {all.length}. The Ledger section has the full chain.</p>}
-      <button className="btn ghost sm" onClick={runTamper} disabled={!entries.length}>
+      <Button onClick={runTamper} disabled={!entries.length}>
         Edit a copy and verify it
-      </button>
+      </Button>
       {tamper && (
         <div className="tamper" role="status">
           Changed entry #{tamper.seq} from “{tamper.original}” to “{tamper.tampered}”. Verification failed at #{tamper.result.firstBad?.seq}: {tamper.result.firstBad?.reason}. The real ledger is {tamper.originalStillValid ? "still valid" : "broken"}.

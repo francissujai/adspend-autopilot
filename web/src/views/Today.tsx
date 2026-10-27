@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { ButtonLink } from "../ui/Button";
 import { DecisionSlip } from "../components/DecisionSlip";
 import { FlowBoard } from "../components/FlowBoard";
 import { LedgerChain } from "../components/LedgerChain";
@@ -50,7 +51,7 @@ export function Today() {
             ) : (
               <Empty title={REPLAY ? "Replaying the recorded cycle" : "No decisions yet"}>
                 {REPLAY ? "Decisions appear as they did when the cycle ran." : <>Run a cycle and the autopilot proposes moves from this week's data.{recorded ? " No Zetaris? Watch a recorded cycle instead." : ""}</>}
-                {!REPLAY && recorded && <div><a className="btn ghost" href={`?replay=${encodeURIComponent(recorded)}&speed=8`}>Watch recorded cycle</a></div>}
+                {!REPLAY && recorded && <div><ButtonLink href={`?replay=${encodeURIComponent(recorded)}&speed=8`}>Watch recorded cycle</ButtonLink></div>}
               </Empty>
             )}
           </div>

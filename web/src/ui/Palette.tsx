@@ -10,7 +10,7 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose: (
   const box = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
-  useGSAP(() => { if (!reducedMotion()) gsap.from(box.current, { y: -10, opacity: 0, duration: 0.2 }); });
+  useGSAP(() => { if (!reducedMotion()) gsap.from(box.current, { opacity: 0, duration: 0.15 }); });
   const shown = useMemo(() => commands.filter((c) => c.label.toLowerCase().includes(q.trim().toLowerCase())), [commands, q]);
   useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${sel}"]`)?.scrollIntoView({ block: "nearest" }); }, [sel]);
   useEffect(() => () => { if (opener?.isConnected) opener.focus(); }, [opener]);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button, ButtonLink } from "../ui/Button";
 import type { AutopilotEvent } from "../types";
 import { REPLAY, SPEED } from "../replay";
 import { useStore, type RunStatus } from "../store-context";
@@ -66,16 +67,16 @@ export function RunPanel({ recorded }: { recorded?: string }) {
       {REPLAY ? (
         <div className="run-actions">
           <span className="runmeta">Recorded cycle <span className="mono">{REPLAY}</span>, replayed at {SPEED}x with its real timing.</span>
-          <a className="btn ghost" href="/app">Back to live</a>
+          <ButtonLink href="/app">Back to live</ButtonLink>
         </div>
       ) : (
         <>
           <div className="run-actions">
-            <button className="btn" onClick={run} disabled={running}>
+            <Button variant="primary" onClick={run} disabled={running}>
               {running && <span className="spinner" aria-hidden />}
               {running ? "Running a cycle" : status === "failed" ? "Run again" : "Run a cycle"}
-            </button>
-            {recorded && !running && <a className="btn ghost" href={`?replay=${encodeURIComponent(recorded)}&speed=${SPEED}`}>Watch recorded cycle</a>}
+            </Button>
+            {recorded && !running && <ButtonLink href={`?replay=${encodeURIComponent(recorded)}&speed=${SPEED}`}>Watch recorded cycle</ButtonLink>}
           </div>
           <label className="toggle">
             <input type="checkbox" checked={useModel} onChange={(e) => setUseModel(e.target.checked)} disabled={running} />

@@ -23,7 +23,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastItem({ t, onClose }: { t: Toast; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  useGSAP(() => { if (!reducedMotion()) gsap.from(ref.current, { y: 12, autoAlpha: 0, duration: 0.25 }); });
+  useGSAP(() => { if (!reducedMotion()) gsap.from(ref.current, { autoAlpha: 0, duration: 0.2 }); });
   return (
     <div ref={ref} className={`toast ${t.ok ? "" : "err"}`}>
       <span>{t.msg}</span>
