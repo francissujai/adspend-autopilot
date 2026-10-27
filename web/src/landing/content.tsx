@@ -1,19 +1,19 @@
 import type { LandingContent } from "./Landing";
+import { DecisionPreview } from "./DecisionPreview";
 
 const dot = (c: string) => ({ "--c": c }) as React.CSSProperties;
 
 export const content: LandingContent = {
   product: "Ad Spend Autopilot",
-  eyebrow: "Budget agent with a signed ledger",
-  cycle: ["Read", "Decide", "Sign"],
-  rest: " every budget move.",
-  statement: "The agent reads Meta, Google and your own orders through Zetaris, proposes budget shifts, and a policy decides what runs. Every decision is signed into a hash-chained ledger.",
+  headline: <>Move ad budget only where the revenue is <em>real</em>.</>,
+  lede: "The agent reads Meta, Google and your own orders through Zetaris and proposes budget shifts. A policy decides what runs, large moves wait for a person, and every decision is signed into a ledger.",
+  preview: (data) => <DecisionPreview entries={data?.[0]} />,
+  previewLabel: "A budget decision moving from reading the data to a signed, held record",
   facts: [
     { title: "Read-only, enforced by Zetaris", body: "The agent's role cannot read customer data. Every cycle probes it and shows the result." },
     { title: "Ed25519 signed ledger", body: "Each decision links to the one before it. Editing history breaks the chain." },
     { title: "Large moves are held", body: "A $5,000 shift waits for a person. Instructions injected into ad data are blocked." },
   ],
-  capsEyebrow: "What it does",
   capsTitle: "From ad data to a signed decision.",
   capsLede: "The same steps, in the same order, every cycle.",
   capabilities: [
@@ -23,9 +23,7 @@ export const content: LandingContent = {
     { title: "Explain every decision", body: "Nemotron writes the reason. It cites evidence and never invents an amount." },
     { title: "Sign the ledger", body: "Each entry is hashed to the one before it and signed with Ed25519." },
   ],
-  interludeEyebrow: "Why it exists",
-  interlude: "Ad platforms grade their own homework. The autopilot checks every claim against what you actually sold, moves money only when the numbers hold, and signs each move so nobody can quietly rewrite it later.",
-  pillarsEyebrow: "The product",
+  why: "Ad platforms grade their own homework. The autopilot checks every claim against what you actually sold, moves money only when the numbers hold, and signs each move so nobody can quietly rewrite it later.",
   pillarsTitle: "Decide, explain, prove.",
   pillars: [
     {
@@ -63,6 +61,5 @@ export const content: LandingContent = {
     },
   ],
   closing: "Spend only where the revenue is real.",
-  scene: "chain",
   footer: "Ad Spend Autopilot. Built with Zetaris, Meterless engines and NVIDIA Nemotron for the Open Agent Hackathon 2026.",
 };
