@@ -43,7 +43,7 @@ Open http://127.0.0.1:4180 and check the browser console after each flow (expect
 | 12 | Phone | Resize to 375 px | Tabs scroll sideways; stamps sit above slip titles; no horizontal page scroll | — |
 | 13 | Reduced motion | Enable reduce motion in the OS, reload | No stamp slam, coin or entrance motion; everything works | — |
 | 14 | CLI | `npm run decisions`, `npm run replay -- D-0001`, `npm run verify`, `npm run tamper-demo` | Lists decisions; replay matches; ledger OK; tamper detected | a cycle |
-| 15 | Landing page | Open `/` at 1440 px and at 375 px; scroll to the end | Attached top bar gains a rule after scrolling; the headline, one sentence and **Open the app** are visible without scrolling; the product views switch on click and with the arrow keys; **Open the app** goes to `/app` without a page load; at 375 px the links sit behind **Menu**, which opens a full-screen sheet that Escape closes; **Theme** in the footer switches Auto, Light and Dark; the hero decision steps through its four states (with reduce motion on it shows the finished record) | — |
+| 15 | Landing page | Open `/` at 1440 px and at 375 px; scroll to the end | Attached top bar gains a rule after scrolling; the headline, one sentence and **Open the app** are visible without scrolling; the product views switch on click and with the arrow keys; **Open the app** goes to `/app` without a page load; the top bar shows the wordmark, what the product is and **Open the app →** (at 375 px only the wordmark and the link); **Theme** in the footer switches Auto, Light and Dark; the hero decision steps through its four states (with reduce motion on it shows the finished record) | — |
 
 Flows 2–9 and 14 need at least one cycle, and a cycle needs Zetaris.
 

@@ -5,6 +5,7 @@ const dot = (c: string) => ({ "--c": c }) as React.CSSProperties;
 
 export const content: LandingContent = {
   product: "Ad Spend Autopilot",
+  tagline: "Budget agent with a signed ledger",
   headline: <>Move ad budget only where the revenue is <em>real</em>.</>,
   lede: "The agent reads Meta, Google and your own orders through Zetaris and proposes budget shifts. A policy decides what runs, large moves wait for a person, and every decision is signed into a ledger.",
   preview: (data) => <DecisionPreview entries={data?.[0]} />,
